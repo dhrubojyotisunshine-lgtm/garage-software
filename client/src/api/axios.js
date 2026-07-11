@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
+  // Same-origin '/api' by default (local dev proxy / single-service deploy).
+  // For a separately hosted client, set VITE_API_URL to the server's /api URL.
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 30000
 });
 
