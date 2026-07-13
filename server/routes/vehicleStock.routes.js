@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
-const ctrl = require('../controllers/party.controller');
+const ctrl = require('../controllers/vehicleStock.controller');
 
 router.use(protect);
 

@@ -1,4 +1,5 @@
 const Jobcard = require('../models/Jobcard');
+const Customer = require('../models/Customer');
 const SparePart = require('../models/masters/SparePart');
 const Lube = require('../models/masters/Lube');
 const { generateJobcardNumber } = require('../utils/jobcardNumber');
@@ -84,8 +85,14 @@ const list = async (req, res) => {
       }}
     ]);
 
+    // Enrich each jobcard with its customer's type (read-only; not stored on the jobcard).
+    const custIds = [...new Set(jobcards.map(j => String(j.customerId || '')).filter(Boolean))];
+    const custs = custIds.length ? await Customer.find({ _id: { $in: custIds } }).select('customerType') : [];
+    const typeMap = new Map(custs.map(c => [String(c._id), c.customerType || '']));
+    const jobcardsOut = jobcards.map(j => ({ ...j.toObject(), customerType: typeMap.get(String(j.customerId)) || '' }));
+
     res.json({
-      jobcards,
+      jobcards: jobcardsOut,
       total,
       page: Number(page),
       pages: Math.ceil(total / Number(limit)),
@@ -135,7 +142,12 @@ const getById = async (req, res) => {
   try {
     const jobcard = await Jobcard.findOne({ _id: req.params.id, garageId: req.garage._id });
     if (!jobcard) return res.status(404).json({ message: 'Jobcard not found' });
-    res.json(jobcard);
+    const out = jobcard.toObject();
+    if (jobcard.customerId) {
+      const cust = await Customer.findById(jobcard.customerId).select('customerType');
+      out.customerType = cust?.customerType || '';
+    }
+    res.json(out);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

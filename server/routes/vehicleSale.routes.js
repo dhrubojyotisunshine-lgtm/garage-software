@@ -9,6 +9,7 @@ router.get('/', ctrl.list);
 router.get('/reports/summary', ctrl.summary);
 router.get('/:id', ctrl.getById);
 router.post('/', ctrl.create);
+router.post('/:id/payments', ctrl.addPayment);
 router.put('/:id', ctrl.update);
 router.delete('/:id', ctrl.remove);
 

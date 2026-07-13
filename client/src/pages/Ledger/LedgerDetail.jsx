@@ -7,6 +7,8 @@ import { DateField } from '../../components/ui/DateField';
 import { ledgerApi } from '../../api/ledgerApi';
 import { useToast } from '../../components/ui/Toast';
 import { formatCurrency, formatDate } from '../../utils/format';
+import LedgerModal from '../../components/LedgerModal';
+import { partyApi } from '../../api/partyApi';
 
 const csvCell = (v) => {
   if (v == null) return '';
@@ -38,6 +40,7 @@ export default function LedgerDetail() {
   const [loading, setLoading] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [showAdd, setShowAdd] = useState(false);
 
   // Name comes from the response when navigating by partyId; from the URL otherwise.
   const displayName = data?.partyName || (name ? decodeURIComponent(name) : '');
@@ -52,8 +55,21 @@ export default function LedgerDetail() {
         ? await ledgerApi.partyById(partyId, params)
         : await ledgerApi.party(decodeURIComponent(name), params);
       setData(data);
-    } catch {
-      toast({ title: 'Failed to load ledger', variant: 'error' });
+    } catch (err) {
+      // A party with no ledger entries yet returns 404 — still render its page
+      // (with the Add Ledger button) using the party master's name/phone.
+      if (partyId && err.response?.status === 404) {
+        try {
+          const { data: party } = await partyApi.get(partyId);
+          setData({
+            partyName: party.partyName, partyPhone: party.phone,
+            summary: { totalDebit: 0, totalCredit: 0, balance: 0, count: 0, firstDate: null, lastDate: null },
+            opening: 0, rows: [], totalDebit: 0, totalCredit: 0, closing: 0
+          });
+        } catch { toast({ title: 'Failed to load ledger', variant: 'error' }); }
+      } else {
+        toast({ title: 'Failed to load ledger', variant: 'error' });
+      }
     } finally { setLoading(false); }
   }, [partyId, name, dateFrom, dateTo]);
 
@@ -137,14 +153,20 @@ export default function LedgerDetail() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-5">
-        <button onClick={() => navigate('/inventory/ledger')} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
-          <ArrowLeft size={18} />
-        </button>
-        <div>
-          <h1 className="font-heading font-bold text-gray-800 text-2xl">{displayName}</h1>
-          <p className="text-gray-500 text-sm">{data.partyPhone ? `${data.partyPhone} · ` : ''}{s.count || 0} transaction{(s.count || 0) === 1 ? '' : 's'}</p>
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/ledger')} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <h1 className="font-heading font-bold text-gray-800 text-2xl">{displayName}</h1>
+            <p className="text-gray-500 text-sm">{data.partyPhone ? `${data.partyPhone} · ` : ''}{s.count || 0} transaction{(s.count || 0) === 1 ? '' : 's'}</p>
+          </div>
         </div>
+        <button onClick={() => setShowAdd(true)}
+          className="px-4 py-2 border border-red-500 text-red-500 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors">
+          Add Ledger
+        </button>
       </div>
 
       {/* Tabs */}
@@ -222,32 +244,30 @@ export default function LedgerDetail() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  {['Date', 'Particulars', 'Type', 'Debit', 'Credit', 'Balance'].map((h, i) => (
-                    <th key={h} className={`py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap ${i >= 3 ? 'text-right' : 'text-left'}`}>{h}</th>
+                  {['Date', 'Narration', 'Remark', 'Type', 'Debit', 'Credit', 'Balance'].map((h, i) => (
+                    <th key={h} className={`py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap ${i >= 4 ? 'text-right' : 'text-left'}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} className="text-center py-12 text-gray-400">Loading…</td></tr>
+                  <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading…</td></tr>
                 ) : (
                   <>
                     <tr className="border-b border-gray-100 bg-blue-50/40">
-                      <td className="py-2.5 px-4 text-gray-500 text-xs" colSpan={5}>Opening Balance</td>
+                      <td className="py-2.5 px-4 text-gray-500 text-xs" colSpan={6}>Opening Balance</td>
                       <td className="py-2.5 px-4 text-right font-semibold text-gray-700">{formatCurrency(data.opening || 0)}</td>
                     </tr>
                     {data.rows.length === 0 ? (
-                      <tr><td colSpan={6} className="text-center py-10 text-gray-400">No transactions in this range</td></tr>
+                      <tr><td colSpan={7} className="text-center py-10 text-gray-400">No transactions in this range</td></tr>
                     ) : data.rows.map((r, i) => (
                       <tr key={r._id || i} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
                         <td className="py-3 px-4 text-gray-600 text-xs whitespace-nowrap align-top">{formatDate(r.date)}</td>
-                        <td className="py-3 px-4">
-                          <div className="font-semibold text-gray-800">
-                            <span className={`mr-1.5 text-xs font-bold ${r.credit > 0 ? 'text-purple-600' : 'text-green-600'}`}>{r.credit > 0 ? 'Cr' : 'Dr'}</span>
-                            {r.narration || r.type}
-                          </div>
-                          {r.remark && <div className="text-xs text-gray-400 italic">{r.remark}</div>}
+                        <td className="py-3 px-4 text-gray-700 align-top">
+                          <span className={`mr-1.5 text-xs font-bold ${r.credit > 0 ? 'text-purple-600' : 'text-green-600'}`}>{r.credit > 0 ? 'Cr' : 'Dr'}</span>
+                          {r.narration || '-'}
                         </td>
+                        <td className="py-3 px-4 text-gray-500 text-xs align-top">{r.remark || '-'}</td>
                         <td className="py-3 px-4 text-gray-600 align-top">{r.type}</td>
                         <td className="py-3 px-4 text-right text-green-700 align-top">{r.debit ? formatCurrency(r.debit) : ''}</td>
                         <td className="py-3 px-4 text-right text-purple-700 align-top">{r.credit ? formatCurrency(r.credit) : ''}</td>
@@ -260,7 +280,7 @@ export default function LedgerDetail() {
               {!loading && (
                 <tfoot>
                   <tr className="border-t-2 border-gray-300 bg-gray-50 font-semibold">
-                    <td className="py-3 px-4" colSpan={3}>Closing Balance</td>
+                    <td className="py-3 px-4" colSpan={4}>Closing Balance</td>
                     <td className="py-3 px-4 text-right text-green-700">{formatCurrency(data.totalDebit || 0)}</td>
                     <td className="py-3 px-4 text-right text-purple-700">{formatCurrency(data.totalCredit || 0)}</td>
                     <td className="py-3 px-4 text-right text-gray-900">{formatCurrency(data.closing || 0)}</td>
@@ -271,6 +291,14 @@ export default function LedgerDetail() {
           </div>
           <p className="text-xs text-gray-400 mt-2">Balance = running total of Credit − Debit. Cr = credit entry, Dr = debit entry.</p>
         </div>
+      )}
+
+      {showAdd && (
+        <LedgerModal
+          presetParty={{ partyId: partyId || '', partyName: displayName, partyPhone: data.partyPhone || '' }}
+          onClose={() => setShowAdd(false)}
+          onSaved={() => { setShowAdd(false); load(); }}
+        />
       )}
     </div>
   );

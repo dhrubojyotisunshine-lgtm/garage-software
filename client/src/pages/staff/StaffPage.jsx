@@ -21,6 +21,8 @@ const MENU_ITEMS = [
   { key: 'estimate',     label: 'Estimate' },
   { key: 'counter-sale', label: 'Counter Sale' },
   { key: 'inventory',    label: 'Inventory' },
+  { key: 'sale',          label: 'Vehicle Sale' },
+  { key: 'ledger',        label: 'Ledger' },
   { key: 'reports',      label: 'Reports' },
   { key: 'cashbook',     label: 'Cashbook' },
   { key: 'appointment',  label: 'Appointment' },

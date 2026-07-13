@@ -5,9 +5,7 @@ function validateVehicleSale(body = {}) {
   const errors = {};
   const customer = body.customer || {};
 
-  if (!body.invoiceNo || !String(body.invoiceNo).trim()) {
-    errors.invoiceNo = 'Invoice Number is required.';
-  }
+  // Invoice number is auto-generated server-side, so it is not required here.
   if (!body.saleDate) {
     errors.saleDate = 'Sale Date is required.';
   } else if (isNaN(new Date(body.saleDate).getTime())) {

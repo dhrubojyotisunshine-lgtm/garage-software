@@ -238,6 +238,7 @@ export default function JobcardListPage() {
                   <td className="py-3 px-4">
                     <div className="font-medium text-gray-800">{jc.customerName || '-'}</div>
                     <div className="text-xs text-gray-400">{jc.customerMobile || ''}</div>
+                    {jc.customerType && <div className="text-[11px] font-semibold text-primary uppercase mt-0.5">{jc.customerType}</div>}
                   </td>
                   <td className="py-3 px-4 text-gray-500 text-xs">
                     {[jc.vehicleMake, jc.vehicleModel].filter(Boolean).join(' ') || '-'}

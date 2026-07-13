@@ -34,6 +34,8 @@ import VehicleSalesListPage from './pages/VehicleSale/VehicleSalesListPage';
 import VehicleSaleWizard from './pages/VehicleSale/VehicleSaleWizard';
 import SaleReportsPage from './pages/VehicleSale/SaleReportsPage';
 import VehicleSaleInvoice from './pages/VehicleSale/VehicleSaleInvoice';
+import VehicleStockList from './pages/VehicleStock/VehicleStockList';
+import VehicleStockForm from './pages/VehicleStock/VehicleStockForm';
 import CounterSalePage from './pages/counter-sale/CounterSalePage';
 import CounterSaleForm from './pages/counter-sale/CounterSaleForm';
 import CounterSaleInvoicePage from './pages/counter-sale/CounterSaleInvoicePage';
@@ -95,14 +97,17 @@ function App() {
           <Route path="/inventory/purchase-order/add-stock" element={<PurchaseOrderForm isAddStock={true} />} />
           <Route path="/inventory/purchase-order/:id" element={<PurchaseOrderForm isAddStock={false} />} />
           <Route path="/inventory/history" element={<InventoryHistoryPage />} />
-          <Route path="/inventory/ledger" element={<LedgerList />} />
-          <Route path="/inventory/ledger/party/:name" element={<LedgerDetail />} />
-          <Route path="/inventory/ledger/party-id/:partyId" element={<LedgerDetail />} />
+          <Route path="/ledger" element={<LedgerList />} />
+          <Route path="/ledger/party/:name" element={<LedgerDetail />} />
+          <Route path="/ledger/party-id/:partyId" element={<LedgerDetail />} />
           <Route path="/sale/vehicle-sales" element={<VehicleSalesListPage />} />
           <Route path="/sale/vehicle-sales/new" element={<VehicleSaleWizard />} />
           <Route path="/sale/vehicle-sales/:id" element={<VehicleSaleWizard />} />
           <Route path="/sale/list" element={<VehicleSalesListPage />} />
           <Route path="/sale/reports" element={<SaleReportsPage />} />
+          <Route path="/vehicle-stock" element={<VehicleStockList />} />
+          <Route path="/vehicle-stock/new" element={<VehicleStockForm />} />
+          <Route path="/vehicle-stock/:id" element={<VehicleStockForm />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/cashbook" element={<CashbookPage />} />
           <Route path="/appointment" element={<AppointmentPage />} />

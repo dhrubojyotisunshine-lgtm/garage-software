@@ -4,32 +4,34 @@ import { SectionCard, Field, inputCls } from './parts';
 
 export default function Step1DealerSale({ form, setTop, setNested, errors }) {
   const d = form.dealer;
+  const roCls = `${inputCls} bg-gray-50 text-gray-600`;
   return (
     <>
       <SectionCard title="Dealer / Showroom Details" icon={Store}>
+        <p className="text-xs text-gray-400 -mt-2 mb-3">Auto-filled from your garage profile.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <Field label="Dealer / Showroom Name" required>
-            <input className={inputCls} value={d.name} onChange={e => setNested('dealer', 'name', e.target.value)} />
+          <Field label="Dealer / Showroom Name">
+            <input className={roCls} value={d.name} readOnly />
           </Field>
           <Field label="Address">
-            <textarea rows={2} className={`${inputCls} resize-none`} value={d.address} onChange={e => setNested('dealer', 'address', e.target.value)} />
+            <textarea rows={2} className={`${roCls} resize-none`} value={d.address} readOnly />
           </Field>
           <Field label="Phone">
-            <input className={inputCls} value={d.phone} onChange={e => setNested('dealer', 'phone', e.target.value)} />
+            <input className={roCls} value={d.phone} readOnly />
           </Field>
           <Field label="Email">
-            <input type="email" className={inputCls} value={d.email} onChange={e => setNested('dealer', 'email', e.target.value)} />
+            <input className={roCls} value={d.email} readOnly />
           </Field>
           <Field label="GSTIN">
-            <input className={inputCls} value={d.gstin} onChange={e => setNested('dealer', 'gstin', e.target.value)} />
+            <input className={roCls} value={d.gstin} readOnly />
           </Field>
         </div>
       </SectionCard>
 
       <SectionCard title="Sale Information" icon={ClipboardList}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <Field label="Invoice No." required error={errors['invoiceNo']}>
-            <input className={inputCls} value={form.invoiceNo} onChange={e => setTop('invoiceNo', e.target.value)} placeholder="INV-2506001" />
+          <Field label="Invoice No.">
+            <input className={`${inputCls} bg-gray-50 text-gray-500`} value={form.invoiceNo || ''} readOnly placeholder="Auto-generated on save" />
           </Field>
           <Field label="Sale Date" required error={errors['saleDate']}>
             <DateField value={form.saleDate} onChange={e => setTop('saleDate', e.target.value)} className={`${inputCls} w-full`} />
@@ -41,8 +43,8 @@ export default function Step1DealerSale({ form, setTop, setNested, errors }) {
               <option value="Exchange">Exchange</option>
             </select>
           </Field>
-          <Field label="Sales Executive">
-            <input className={inputCls} value={form.salesExecutive} onChange={e => setTop('salesExecutive', e.target.value)} placeholder="Select Sales Executive" />
+          <Field label="Enter Executive">
+            <input className={inputCls} value={form.salesExecutive} onChange={e => setTop('salesExecutive', e.target.value)} placeholder="Enter Executive" />
           </Field>
         </div>
       </SectionCard>

@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, FileText, FileSpreadsheet, ShoppingCart,
   Package, BarChart2, BookOpen, Calendar, CreditCard,
-  Database, Settings, ChevronDown, ChevronRight, Wrench, Users, UserCircle, BellRing, Car
+  Database, Settings, ChevronDown, ChevronRight, Wrench, Users, UserCircle, BellRing, Car, ScrollText
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import useAuthStore from '../../store/authStore';
@@ -23,18 +23,19 @@ const ALL_NAV = [
       { label: 'Stock',          path: '/inventory' },
       { label: 'Supplier',       path: '/inventory/supplier' },
       { label: 'Purchase Order', path: '/inventory/purchase-order' },
-      { label: 'Ledger',         path: '/inventory/ledger' },
       { label: 'History',        path: '/inventory/history' }
     ]
   },
   {
-    key: 'sale', label: 'Sale', icon: Car, path: '/sale/vehicle-sales',
+    key: 'sale', label: 'Vehicle Sale', icon: Car, path: '/sale/vehicle-sales',
     children: [
-      { label: 'Vehicle Sales', path: '/sale/vehicle-sales' },
-      { label: 'Sale List',     path: '/sale/list' },
-      { label: 'Sale Reports',  path: '/sale/reports' }
+      { label: 'Vehicle Sales',    path: '/sale/vehicle-sales' },
+      { label: 'Sale List',        path: '/sale/list' },
+      { label: 'Sale Reports',     path: '/sale/reports' },
+      { label: 'Stock Management', path: '/vehicle-stock' }
     ]
   },
+  { key: 'ledger',      label: 'Ledger',      icon: ScrollText, path: '/ledger' },
   { key: 'reports',     label: 'Reports',     icon: BarChart2,  path: '/reports' },
   { key: 'cashbook',    label: 'Cashbook',    icon: BookOpen,   path: '/cashbook' },
   { key: 'appointment', label: 'Appointment', icon: Calendar,   path: '/appointment' },

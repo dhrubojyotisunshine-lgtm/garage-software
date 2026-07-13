@@ -61,7 +61,7 @@ export default function JobcardFormPage() {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '' });
+  const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', customerType: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '' });
 
   // Form state
   const [form, setForm] = useState({
@@ -209,7 +209,7 @@ export default function JobcardFormPage() {
         driverMobile: data.driverMobile || ''
       });
       if (data.customerId) {
-        setSelectedCustomer({ _id: data.customerId, name: data.customerName, mobile: data.customerMobile, email: data.customerEmail });
+        setSelectedCustomer({ _id: data.customerId, name: data.customerName, mobile: data.customerMobile, email: data.customerEmail, customerType: data.customerType });
         setSelectedVehicle({ vehicleNo: data.vehicleNo, makeName: data.vehicleMake, modelName: data.vehicleModel });
       }
     }).catch(() => toast({ title: 'Failed to load jobcard', variant: 'error' }));
@@ -599,7 +599,7 @@ export default function JobcardFormPage() {
                       {(() => { const f = customerFlag(selectedCustomer); return f && <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${f.badge}`}>{f.label}</span>; })()}
                     </div>
                     <div className="text-xs text-gray-400">{selectedCustomer.mobile}</div>
-                    {selectedCustomer.customerType && <div className="mt-1 text-lg font-extrabold text-primary uppercase tracking-wide">{selectedCustomer.customerType}</div>}
+                    {selectedCustomer.customerType && <div className="mt-0.5"><span className="text-xs text-gray-400">Type: </span><span className="text-base font-bold uppercase text-red-600">{selectedCustomer.customerType}</span></div>}
                     {(() => { const f = customerFlag(selectedCustomer); return f?.lastNote && <div className="text-xs text-amber-700 mt-1 flex items-start gap-1"><AlertTriangle size={11} className="mt-0.5 flex-shrink-0" />{f.lastNote}</div>; })()}
                   </div>
                 </div>
@@ -1114,8 +1114,11 @@ export default function JobcardFormPage() {
                 </div>
               </div>
 
-              {/* Add transaction */}
-              {perm('canAddPayment') && <div className="border-t border-border pt-4 space-y-2">
+              {/* Add transaction — gated by role permission AND the current status's
+                  allowAddTransaction flag (defaults to showing only for Completed). */}
+              {perm('canAddPayment')
+                && (jobcardStatuses.find(s => s._id === form.status)?.allowAddTransaction ?? (form.statusCategory === 'Completed'))
+                && <div className="border-t border-border pt-4 space-y-2">
                 <p className="text-xs font-semibold text-gray-600 uppercase">Add Transaction</p>
                 <div className="grid grid-cols-2 gap-2">
                   <select value={txnForm.type} onChange={e => setTxnForm(f => ({ ...f, type: e.target.value }))} className={`${selectCls} w-full`}>
@@ -1335,6 +1338,7 @@ export default function JobcardFormPage() {
               const { data } = await customersApi.create({
                 name: newCustomer.name,
                 mobile: newCustomer.mobile,
+                customerType: newCustomer.customerType,
                 vehicles: newCustomer.vehicleNo ? [{
                   vehicleNo: newCustomer.vehicleNo,
                   make: newCustomer.makeId,
@@ -1471,6 +1475,10 @@ function NewCustomerForm({ value, onChange, makes, models, onSave, onClose }) {
         <div>
           <label className="text-xs font-medium text-gray-500 mb-1 block">Mobile <span className="text-red-500">*</span></label>
           <input value={value.mobile} onChange={e => set('mobile', e.target.value)} className={inputCls} placeholder="10-digit mobile" />
+        </div>
+        <div className="col-span-2">
+          <label className="text-xs font-bold text-gray-700 mb-1 block">Customer Type</label>
+          <input value={value.customerType || ''} onChange={e => set('customerType', e.target.value)} className={inputCls} placeholder="e.g. VIP, Fleet, Walk-in, Corporate" />
         </div>
         <div className="col-span-2">
           <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Number</label>

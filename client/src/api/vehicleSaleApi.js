@@ -6,5 +6,6 @@ export const vehicleSaleApi = {
   summary: ()         => api.get('/vehicle-sales/reports/summary'),
   create:  (data)     => api.post('/vehicle-sales', data),
   update:  (id, data) => api.put(`/vehicle-sales/${id}`, data),
+  addPayment: (id, data) => api.post(`/vehicle-sales/${id}/payments`, data),
   delete:  (id)       => api.delete(`/vehicle-sales/${id}`)
 };

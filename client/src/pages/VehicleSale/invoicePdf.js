@@ -62,14 +62,7 @@ export function downloadInvoicePdf(sale) {
 
   // ── Amount summary (right half) ──
   const rows = [
-    ['Ex-Showroom Price', money(sale.billing?.exShowroom)],
-    ['GST', money(sale.billing?.gst)],
-    ['TCS', money(sale.billing?.tcs)],
-    ['Accessories', money(sale.billing?.accessories)],
-    ['Net Vehicle Amount', money(sale.billing?.netVehicleAmount)],
-    ['Total Insurance', money(sale.insurance?.totalInsurance)],
-    ['Total RTO', money(sale.rto?.totalRto)],
-    ['Gross Amount', money(sale.payment?.grossAmount)],
+    ['Showroom Price', money(sale.payment?.showroomPrice ?? sale.payment?.grossAmount)],
     ['Total Discount', money(sale.payment?.totalDiscount)],
     ['Net Payable', money(sale.payment?.netPayable)],
     ['Advance Paid', money(sale.payment?.advancePaid)],
@@ -87,7 +80,7 @@ export function downloadInvoicePdf(sale) {
     didParseCell: (d) => {
       if (d.section !== 'body') return;
       const label = rows[d.row.index]?.[0];
-      if (['Net Payable', 'Balance Amount', 'Gross Amount'].includes(label)) {
+      if (['Net Payable', 'Balance Amount', 'Showroom Price'].includes(label)) {
         d.cell.styles.fontStyle = 'bold';
         d.cell.styles.fillColor = [249, 250, 251];
       }

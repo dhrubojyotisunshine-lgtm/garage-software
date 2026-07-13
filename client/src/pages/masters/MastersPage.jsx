@@ -11,7 +11,8 @@ const MASTER_TABS = [
   {
     key: 'jobcard-statuses', label: 'Statuses', fields: [
       { name: 'name', label: 'Status Name', required: true },
-      { name: 'category', label: 'Category', type: 'select', options: ['Open', 'Completed', 'Closed'], required: true }
+      { name: 'category', label: 'Category', type: 'select', options: ['Open', 'Completed', 'Closed'], required: true },
+      { name: 'allowAddTransaction', label: 'Add Transaction', type: 'checkbox', checkboxLabel: 'Show the Add Transaction section for jobcards in this status' }
     ]
   },
   { key: 'vehicle-makes', label: 'Vehicle Makes', fields: [{ name: 'name', label: 'Make Name', required: true }] },
@@ -158,7 +159,7 @@ function MasterTable({ entity, tab, makes }) {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={!!form[field.name]}
                     onChange={e => setForm(f => ({ ...f, [field.name]: e.target.checked }))} className="w-4 h-4 accent-primary" />
-                  <span className="text-sm text-gray-600">Mark as frequent item</span>
+                  <span className="text-sm text-gray-600">{field.checkboxLabel || 'Mark as frequent item'}</span>
                 </label>
               ) : (
                 <input type={field.type || 'text'} value={form[field.name] || ''}

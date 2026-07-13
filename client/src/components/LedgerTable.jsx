@@ -1,6 +1,6 @@
 import { Pencil, Trash2 } from 'lucide-react';
 
-const COLUMNS = ['Sr No', 'Party Name', 'Amount', 'Type', 'Date', 'Narration', 'Remark', 'Action'];
+const COLUMNS = ['Sr No', 'Party Name', 'Phone', 'Amount', 'Type', 'Action'];
 
 const fmtDate = (d) => {
   if (!d) return '-';
@@ -35,15 +35,13 @@ export default function LedgerTable({ rows = [], loading, onEdit, onDelete, onPa
                   {r.partyName}
                 </button>
               </td>
+              <td className="py-3 px-4 text-gray-500">{r.partyPhone || '-'}</td>
               <td className="py-3 px-4 text-gray-700">{fmtAmount(r.amount)}</td>
               <td className="py-3 px-4">
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                   r.type === 'Credit' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                 }`}>{r.type || '-'}</span>
               </td>
-              <td className="py-3 px-4 text-gray-700">{fmtDate(r.date)}</td>
-              <td className="py-3 px-4 text-gray-500 text-xs">{r.narration || '-'}</td>
-              <td className="py-3 px-4 text-gray-500 text-xs">{r.remark || '-'}</td>
               <td className="py-3 px-4">
                 <div className="flex items-center gap-1">
                   <button onClick={() => onEdit(r)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-400 hover:text-blue-600">

@@ -66,6 +66,34 @@ exports.remove = async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
+// POST /api/vehicle-sales/:id/payments  — record an installment payment.
+exports.addPayment = async (req, res) => {
+  try {
+    const sale = await VehicleSale.findOne({ _id: req.params.id, garageId: req.garage._id });
+    if (!sale) return res.status(404).json({ message: 'Not found' });
+
+    const amount = Number(req.body.amount);
+    if (!amount || amount <= 0) return res.status(400).json({ message: 'A valid payment amount is required.' });
+
+    sale.payments.push({
+      amount,
+      date: req.body.date ? new Date(req.body.date) : new Date(),
+      mode: req.body.mode || '',
+      reference: req.body.reference || '',
+      note: req.body.note || ''
+    });
+
+    const installments = sale.payments.reduce((s, p) => s + (p.amount || 0), 0);
+    const totalPaid = (sale.payment.advancePaid || 0) + installments;
+    sale.payment.totalPaid = totalPaid;
+    sale.payment.balanceAmount = (sale.payment.netPayable || 0) - totalPaid;
+    sale.payment.paymentStatus = sale.payment.balanceAmount <= 0 ? 'Paid' : 'Pending';
+
+    await sale.save();
+    res.json(sale);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
 // GET /api/vehicle-sales/reports/summary  — totals for the Sale Reports page
 exports.summary = async (req, res) => {
   try {

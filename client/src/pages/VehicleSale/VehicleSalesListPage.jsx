@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Pencil, Trash2, Download } from 'lucide-react';
+import { Search, Plus, Pencil, Trash2, Download, Wallet, History } from 'lucide-react';
 import { vehicleSaleApi } from '../../api/vehicleSaleApi';
 import { useToast } from '../../components/ui/Toast';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { downloadInvoicePdf } from './invoicePdf';
+import PaymentModal from '../../components/VehicleSale/PaymentModal';
+import PaymentHistoryModal from '../../components/VehicleSale/PaymentHistoryModal';
 
 export default function VehicleSalesListPage() {
   const navigate = useNavigate();
@@ -12,6 +14,8 @@ export default function VehicleSalesListPage() {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [payFor, setPayFor] = useState(null);      // sale to add a payment to
+  const [historyFor, setHistoryFor] = useState(null); // sale to view history
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,6 +97,12 @@ export default function VehicleSalesListPage() {
                 </td>
                 <td className="py-3 px-4" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center gap-1">
+                    <button onClick={() => setPayFor(s)} title="Add Payment (Pay Remaining)" className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-500 hover:text-emerald-700">
+                      <Wallet size={14} />
+                    </button>
+                    <button onClick={() => setHistoryFor(s)} title="Payment History" className="p-1.5 rounded-lg hover:bg-violet-50 text-violet-500 hover:text-violet-700">
+                      <History size={14} />
+                    </button>
                     <button onClick={() => downloadInvoicePdf(s)} title="Download Invoice PDF" className="p-1.5 rounded-lg hover:bg-green-50 text-green-500 hover:text-green-700">
                       <Download size={14} />
                     </button>
@@ -109,6 +119,20 @@ export default function VehicleSalesListPage() {
           </tbody>
         </table>
       </div>
+
+      {payFor && (
+        <PaymentModal
+          sale={payFor}
+          onClose={() => setPayFor(null)}
+          onSaved={() => { setPayFor(null); load(); }}
+        />
+      )}
+      {historyFor && (
+        <PaymentHistoryModal
+          sale={historyFor}
+          onClose={() => setHistoryFor(null)}
+        />
+      )}
     </div>
   );
 }

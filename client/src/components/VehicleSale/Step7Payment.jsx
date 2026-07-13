@@ -1,8 +1,8 @@
-import { Wallet, CreditCard } from 'lucide-react';
+import { Wallet, CreditCard, History } from 'lucide-react';
 import { DateField } from '../ui/DateField';
 import { SectionCard, Field, inputCls, errorCls } from './parts';
-import { computeDerived } from '../../pages/VehicleSale/saleUtils';
-import { formatCurrency } from '../../utils/format';
+import { computeDerived, num } from '../../pages/VehicleSale/saleUtils';
+import { formatCurrency, formatDate } from '../../utils/format';
 
 function SummaryRow({ label, value, strong }) {
   return (
@@ -16,10 +16,17 @@ function SummaryRow({ label, value, strong }) {
 export default function Step7Payment({ form, setNested, errors }) {
   const p = form.payment;
   const d = computeDerived(form).payment;
+
+  // Full payment trail = advance (if any) + recorded installments.
+  const history = [];
+  if (num(p.advancePaid) > 0) history.push({ date: p.paymentDate, amount: p.advancePaid, mode: p.paymentMode, reference: p.transactionId, note: 'Advance at sale' });
+  (form.payments || []).forEach(x => history.push({ date: x.date, amount: x.amount, mode: x.mode, reference: x.reference, note: x.note }));
+
   return (
+    <>
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       <SectionCard title="Payment Summary" icon={Wallet}>
-        <SummaryRow label="Gross Amount (A + B + C)" value={formatCurrency(d.grossAmount)} />
+        <SummaryRow label="Showroom Price" value={formatCurrency(d.showroomPrice)} />
         <div className="flex items-center justify-between py-2 border-b border-gray-100">
           <span className="text-sm text-gray-500">Total Discount</span>
           <input type="number" className={`${inputCls} max-w-[160px] text-right`} value={p.totalDiscount} onChange={e => setNested('payment', 'totalDiscount', e.target.value)} />
@@ -29,6 +36,7 @@ export default function Step7Payment({ form, setNested, errors }) {
           <span className="text-sm text-gray-500">Advance Paid</span>
           <input type="number" className={`${inputCls} max-w-[160px] text-right`} value={p.advancePaid} onChange={e => setNested('payment', 'advancePaid', e.target.value)} />
         </div>
+        <SummaryRow label="Total Paid" value={formatCurrency(d.totalPaid)} strong />
         <SummaryRow label="Balance Amount" value={formatCurrency(d.balanceAmount)} strong />
       </SectionCard>
 
@@ -67,5 +75,35 @@ export default function Step7Payment({ form, setNested, errors }) {
         </div>
       </SectionCard>
     </div>
+
+    {history.length > 0 && (
+      <SectionCard title="Payment History" icon={History}>
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50">
+                {['#', 'Date', 'Amount', 'Mode', 'Reference', 'Note'].map((h, i) => (
+                  <th key={h} className={`py-2.5 px-3 text-xs font-semibold text-gray-500 uppercase ${i === 2 ? 'text-right' : 'text-left'}`}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((r, i) => (
+                <tr key={i} className="border-b border-gray-100 last:border-0">
+                  <td className="py-2.5 px-3 text-gray-500">{i + 1}</td>
+                  <td className="py-2.5 px-3 text-gray-600 whitespace-nowrap">{formatDate(r.date)}</td>
+                  <td className="py-2.5 px-3 text-right font-medium text-gray-800">{formatCurrency(r.amount)}</td>
+                  <td className="py-2.5 px-3 text-gray-600">{r.mode || '-'}</td>
+                  <td className="py-2.5 px-3 text-gray-500 text-xs">{r.reference || '-'}</td>
+                  <td className="py-2.5 px-3 text-gray-500 text-xs">{r.note || '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-gray-400 mt-2">Use “Add Payment” from the Sales List to record new installments.</p>
+      </SectionCard>
+    )}
+    </>
   );
 }

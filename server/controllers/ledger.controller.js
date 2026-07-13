@@ -67,7 +67,7 @@ function buildLedgerResponse(entries, displayName, query = {}) {
 exports.list = async (req, res) => {
   try {
     const { search } = req.query;
-    const q = {};
+    const q = { garageId: req.garage._id };
     if (search) {
       q.$or = [
         { partyName: { $regex: search, $options: 'i' } },
@@ -83,7 +83,7 @@ exports.list = async (req, res) => {
 // GET /api/ledger/:id
 exports.getById = async (req, res) => {
   try {
-    const ledger = await Ledger.findById(req.params.id);
+    const ledger = await Ledger.findOne({ _id: req.params.id, garageId: req.garage._id });
     if (!ledger) return res.status(404).json({ message: 'Not found' });
     res.json(ledger);
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -94,7 +94,7 @@ exports.create = async (req, res) => {
   try {
     const { valid, errors } = validateLedger(req.body);
     if (!valid) return res.status(400).json({ message: 'Validation failed', errors });
-    const ledger = await Ledger.create(pick(req.body));
+    const ledger = await Ledger.create({ ...pick(req.body), garageId: req.garage._id });
     res.status(201).json(ledger);
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
@@ -104,8 +104,8 @@ exports.update = async (req, res) => {
   try {
     const { valid, errors } = validateLedger(req.body);
     if (!valid) return res.status(400).json({ message: 'Validation failed', errors });
-    const ledger = await Ledger.findByIdAndUpdate(
-      req.params.id,
+    const ledger = await Ledger.findOneAndUpdate(
+      { _id: req.params.id, garageId: req.garage._id },
       pick(req.body),
       { new: true, runValidators: true }
     );
@@ -118,7 +118,7 @@ exports.update = async (req, res) => {
 // (the canonical grouping: all entries for the same party roll up here).
 exports.partyLedgerById = async (req, res) => {
   try {
-    const all = await Ledger.find({ partyId: req.params.partyId }).sort({ date: 1, createdAt: 1 });
+    const all = await Ledger.find({ partyId: req.params.partyId, garageId: req.garage._id }).sort({ date: 1, createdAt: 1 });
     if (all.length === 0) return res.status(404).json({ message: 'No entries for this party' });
     res.json(buildLedgerResponse(all, all[0].partyName, req.query));
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -129,7 +129,7 @@ exports.partyLedgerById = async (req, res) => {
 exports.partyLedger = async (req, res) => {
   try {
     const name = decodeURIComponent(req.params.name);
-    const all = await Ledger.find({ partyName: name }).sort({ date: 1, createdAt: 1 });
+    const all = await Ledger.find({ partyName: name, garageId: req.garage._id }).sort({ date: 1, createdAt: 1 });
     if (all.length === 0) return res.status(404).json({ message: 'No entries for this party' });
     res.json(buildLedgerResponse(all, name, req.query));
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -138,7 +138,7 @@ exports.partyLedger = async (req, res) => {
 // DELETE /api/ledger/:id  — hard delete (schema has no soft-delete flag)
 exports.remove = async (req, res) => {
   try {
-    const ledger = await Ledger.findByIdAndDelete(req.params.id);
+    const ledger = await Ledger.findOneAndDelete({ _id: req.params.id, garageId: req.garage._id });
     if (!ledger) return res.status(404).json({ message: 'Not found' });
     res.json({ message: 'Deleted' });
   } catch (err) { res.status(500).json({ message: err.message }); }

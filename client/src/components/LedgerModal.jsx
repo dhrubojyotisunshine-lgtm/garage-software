@@ -16,8 +16,12 @@ function validate(form) {
   return errors;
 }
 
-export default function LedgerModal({ item, onClose, onSaved }) {
-  const [form, setForm] = useState(item ? { ...EMPTY, ...item, date: item.date ? String(item.date).slice(0, 10) : '' } : { ...EMPTY });
+export default function LedgerModal({ item, presetParty, onClose, onSaved }) {
+  const [form, setForm] = useState(
+    item
+      ? { ...EMPTY, ...item, date: item.date ? String(item.date).slice(0, 10) : '' }
+      : { ...EMPTY, ...(presetParty || {}) }
+  );
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();

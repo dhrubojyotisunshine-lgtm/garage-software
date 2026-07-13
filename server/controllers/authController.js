@@ -150,6 +150,7 @@ const sanitizeGarage = (garage) => ({
   state: garage.state,
   zipcode: garage.zipcode,
   address: garage.address,
+  gstNo: garage.gstNo,
   isVerified: garage.isVerified,
   logoUrl: garage.logoUrl,
   signatureUrl: garage.signatureUrl,

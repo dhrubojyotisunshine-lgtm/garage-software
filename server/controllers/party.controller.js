@@ -1,11 +1,12 @@
 const Party = require('../models/party.model');
+const Ledger = require('../models/ledger.model');
 const { validateParty } = require('../validation/party.validation');
 
-// GET /api/party  — list (optional ?search= on name or phone)
+// GET /api/party  — list of parties, each enriched with its ledger balance.
 exports.list = async (req, res) => {
   try {
     const { search } = req.query;
-    const q = {};
+    const q = { garageId: req.garage._id };
     if (search) {
       q.$or = [
         { partyName: { $regex: search, $options: 'i' } },
@@ -13,14 +14,45 @@ exports.list = async (req, res) => {
       ];
     }
     const parties = await Party.find(q).sort({ partyName: 1 });
-    res.json(parties);
+
+    const ids = parties.map(p => p._id);
+    const agg = ids.length ? await Ledger.aggregate([
+      { $match: { garageId: req.garage._id, partyId: { $in: ids } } },
+      { $group: {
+        _id: '$partyId',
+        credit: { $sum: { $cond: [{ $eq: ['$type', 'Credit'] }, '$amount', 0] } },
+        debit:  { $sum: { $cond: [{ $eq: ['$type', 'Debit'] }, '$amount', 0] } },
+        count:  { $sum: 1 },
+        lastDate: { $max: '$date' }
+      } }
+    ]) : [];
+    const m = new Map(agg.map(a => [String(a._id), a]));
+
+    const out = parties.map(p => {
+      const a = m.get(String(p._id)) || { credit: 0, debit: 0, count: 0, lastDate: null };
+      return {
+        ...p.toObject(),
+        totalCredit: a.credit, totalDebit: a.debit, balance: a.credit - a.debit,
+        txnCount: a.count, lastDate: a.lastDate
+      };
+    });
+    res.json(out);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+// DELETE /api/party/:id  — hard delete the party master (ledger entries keep their name).
+exports.remove = async (req, res) => {
+  try {
+    const party = await Party.findOneAndDelete({ _id: req.params.id, garageId: req.garage._id });
+    if (!party) return res.status(404).json({ message: 'Not found' });
+    res.json({ message: 'Deleted' });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
 // GET /api/party/:id
 exports.getById = async (req, res) => {
   try {
-    const party = await Party.findById(req.params.id);
+    const party = await Party.findOne({ _id: req.params.id, garageId: req.garage._id });
     if (!party) return res.status(404).json({ message: 'Not found' });
     res.json(party);
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -33,7 +65,8 @@ exports.create = async (req, res) => {
     if (!valid) return res.status(400).json({ message: 'Validation failed', errors });
     const party = await Party.create({
       partyName: String(req.body.partyName).trim(),
-      phone:     String(req.body.phone).trim()
+      phone:     String(req.body.phone).trim(),
+      garageId:  req.garage._id
     });
     res.status(201).json(party);
   } catch (err) {
@@ -49,8 +82,8 @@ exports.update = async (req, res) => {
   try {
     const { valid, errors } = validateParty(req.body);
     if (!valid) return res.status(400).json({ message: 'Validation failed', errors });
-    const party = await Party.findByIdAndUpdate(
-      req.params.id,
+    const party = await Party.findOneAndUpdate(
+      { _id: req.params.id, garageId: req.garage._id },
       { partyName: String(req.body.partyName).trim(), phone: String(req.body.phone).trim() },
       { new: true, runValidators: true }
     );

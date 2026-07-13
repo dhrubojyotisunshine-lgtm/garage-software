@@ -7,27 +7,41 @@ import WizardFooter from '../../components/VehicleSale/WizardFooter';
 import Step1DealerSale from '../../components/VehicleSale/Step1DealerSale';
 import Step2Customer from '../../components/VehicleSale/Step2Customer';
 import Step3Vehicle from '../../components/VehicleSale/Step3Vehicle';
-import Step4Billing from '../../components/VehicleSale/Step4Billing';
-import Step5Insurance from '../../components/VehicleSale/Step5Insurance';
-import Step6RTO from '../../components/VehicleSale/Step6RTO';
 import Step7Payment from '../../components/VehicleSale/Step7Payment';
 import Step8Narration from '../../components/VehicleSale/Step8Narration';
 import { vehicleSaleApi } from '../../api/vehicleSaleApi';
 import { emptySale, computeDerived, validateStep, STEPS } from './saleUtils';
+import useAuthStore from '../../store/authStore';
 
 const dateStr = (v) => (v ? String(v).slice(0, 10) : '');
+
+// Map the logged-in garage profile to dealer/showroom fields.
+const dealerFromGarage = (g) => ({
+  name:    g?.workshopName || '',
+  address: [g?.address, g?.city, g?.state, g?.zipcode].filter(Boolean).join(', '),
+  phone:   [g?.mobile, g?.mobile2].filter(Boolean).join(' / '),
+  email:   g?.email || '',
+  gstin:   g?.gstNo || ''
+});
 
 export default function VehicleSaleWizard() {
   const { id } = useParams();
   const isEdit = !!id;
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { garage } = useAuthStore();
 
   const [form, setForm] = useState(emptySale());
   const [step, setStep] = useState(0);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit);
+
+  // New sale: auto-fill dealer/showroom from the logged-in garage profile.
+  useEffect(() => {
+    if (isEdit || !garage) return;
+    setForm(f => ({ ...f, dealer: dealerFromGarage(garage) }));
+  }, [garage, isEdit]);
 
   // Load existing sale in edit mode.
   const load = useCallback(async () => {
@@ -94,9 +108,6 @@ export default function VehicleSaleWizard() {
     <Step1DealerSale {...stepProps} />,
     <Step2Customer {...stepProps} />,
     <Step3Vehicle {...stepProps} />,
-    <Step4Billing {...stepProps} />,
-    <Step5Insurance {...stepProps} />,
-    <Step6RTO {...stepProps} />,
     <Step7Payment {...stepProps} />,
     <Step8Narration {...stepProps} />
   ];

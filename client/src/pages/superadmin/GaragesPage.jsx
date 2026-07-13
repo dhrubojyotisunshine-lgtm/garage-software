@@ -14,13 +14,15 @@ const DEFAULT_MENU = [
   { key: 'estimate',    label: 'Estimate',     enabled: true, order: 3 },
   { key: 'counter-sale',label: 'Counter-Sale', enabled: true, order: 4 },
   { key: 'inventory',   label: 'Inventory',    enabled: true, order: 5 },
-  { key: 'reports',     label: 'Reports',      enabled: true, order: 6 },
-  { key: 'cashbook',    label: 'Cashbook',     enabled: true, order: 7 },
-  { key: 'appointment', label: 'Appointment',  enabled: true, order: 8 },
-  { key: 'expenses',    label: 'Expenses',     enabled: true, order: 9 },
-  { key: 'masters',     label: 'Masters',      enabled: true, order: 10 },
-  { key: 'staff',       label: 'Staff',        enabled: true, order: 11 },
-  { key: 'settings',    label: 'Settings',     enabled: true, order: 12 },
+  { key: 'sale',        label: 'Vehicle Sale', enabled: true, order: 6 },
+  { key: 'ledger',      label: 'Ledger',       enabled: true, order: 7 },
+  { key: 'reports',     label: 'Reports',      enabled: true, order: 8 },
+  { key: 'cashbook',    label: 'Cashbook',     enabled: true, order: 9 },
+  { key: 'appointment', label: 'Appointment',  enabled: true, order: 10 },
+  { key: 'expenses',    label: 'Expenses',     enabled: true, order: 11 },
+  { key: 'masters',     label: 'Masters',      enabled: true, order: 12 },
+  { key: 'staff',       label: 'Staff',        enabled: true, order: 13 },
+  { key: 'settings',    label: 'Settings',     enabled: true, order: 14 },
 ];
 
 function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
@@ -322,7 +324,13 @@ function GarageManageModal({ garage, onClose, onSaved }) {
 
   const [menuItems, setMenuItems] = useState(() => {
     const cfg = garage?.menuConfig;
-    if (cfg && cfg.length > 0) return [...cfg].sort((a, b) => a.order - b.order);
+    if (cfg && cfg.length > 0) {
+      const existing = [...cfg].sort((a, b) => a.order - b.order);
+      // Append any newly added modules that aren't in this garage's saved config yet.
+      const have = new Set(existing.map(m => m.key));
+      const missing = DEFAULT_MENU.filter(m => !have.has(m.key)).map(m => ({ ...m }));
+      return [...existing, ...missing].map((m, idx) => ({ ...m, order: idx }));
+    }
     return DEFAULT_MENU.map(m => ({ ...m }));
   });
 

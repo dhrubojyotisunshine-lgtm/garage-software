@@ -32,10 +32,7 @@ export default function VehicleSaleInvoice() {
   if (loading) return <div className="py-16 text-center text-gray-400">Loading…</div>;
   if (!sale) return <div className="py-16 text-center text-gray-400">Invoice not found.</div>;
 
-  const d = sale.dealer || {}, c = sale.customer || {}, b = sale.billing || {};
-  const ins = sale.insurance || {}, rto = sale.rto || {}, p = sale.payment || {};
-  const policies = Object.entries(ins.policyTypes || {}).filter(([, v]) => v)
-    .map(([k]) => ({ thirdParty: 'Third Party', comprehensive: 'Comprehensive', zeroDepreciation: 'Zero Depreciation', ownDamage: 'Own Damage' }[k])).join(', ');
+  const d = sale.dealer || {}, c = sale.customer || {}, p = sale.payment || {};
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -112,55 +109,31 @@ export default function VehicleSaleInvoice() {
           </table>
         </div>
 
-        {/* Amounts + side details */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div className="space-y-4">
-            <div>
-              <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Insurance</div>
-              <Row label="Company" value={ins.company || '-'} />
-              {policies && <Row label="Policy" value={policies} />}
-              <Row label="Total Insurance" value={formatCurrency(ins.totalInsurance)} />
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-gray-500 uppercase mb-1">RTO</div>
-              <Row label="Registration Charges" value={formatCurrency(rto.registrationCharges)} />
-              <Row label="Registration Fee" value={formatCurrency(rto.registrationFee)} />
-              <Row label="Total RTO" value={formatCurrency(rto.totalRto)} />
-            </div>
-          </div>
-
-          <div>
-            <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Billing & Payment</div>
-            <table className="w-full text-sm border border-gray-200">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500">Description</th>
-                  <th className="py-2 px-3 text-right text-xs font-semibold text-gray-500">Amount</th>
+        {/* Payment summary */}
+        <div className="sm:max-w-sm sm:ml-auto">
+          <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Payment Summary</div>
+          <table className="w-full text-sm border border-gray-200">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500">Description</th>
+                <th className="py-2 px-3 text-right text-xs font-semibold text-gray-500">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ['Showroom Price', p.showroomPrice ?? p.grossAmount, true],
+                ['Total Discount', p.totalDiscount],
+                ['Net Payable', p.netPayable, true],
+                ['Advance Paid', p.advancePaid],
+                ['Balance Amount', p.balanceAmount, true],
+              ].map(([label, val, strong]) => (
+                <tr key={label} className={`border-b border-gray-100 last:border-0 ${strong ? 'bg-gray-50' : ''}`}>
+                  <td className={`py-1.5 px-3 ${strong ? 'font-semibold text-gray-800' : 'text-gray-600'}`}>{label}</td>
+                  <td className={`py-1.5 px-3 text-right ${strong ? 'font-bold text-gray-900' : 'text-gray-700'}`}>{formatCurrency(val)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {[
-                  ['Ex-Showroom Price', b.exShowroom],
-                  ['GST', b.gst],
-                  ['TCS', b.tcs],
-                  ['Accessories', b.accessories],
-                  ['Net Vehicle Amount', b.netVehicleAmount],
-                  ['Total Insurance', ins.totalInsurance],
-                  ['Total RTO', rto.totalRto],
-                  ['Gross Amount', p.grossAmount, true],
-                  ['Total Discount', p.totalDiscount],
-                  ['Net Payable', p.netPayable, true],
-                  ['Advance Paid', p.advancePaid],
-                  ['Balance Amount', p.balanceAmount, true],
-                ].map(([label, val, strong]) => (
-                  <tr key={label} className={`border-b border-gray-100 last:border-0 ${strong ? 'bg-gray-50' : ''}`}>
-                    <td className={`py-1.5 px-3 ${strong ? 'font-semibold text-gray-800' : 'text-gray-600'}`}>{label}</td>
-                    <td className={`py-1.5 px-3 text-right ${strong ? 'font-bold text-gray-900' : 'text-gray-700'}`}>{formatCurrency(val)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         {/* Payment meta + narration */}

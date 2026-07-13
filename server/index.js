@@ -31,6 +31,7 @@ app.use('/api/purchase-orders', require('./routes/purchaseOrders'));
 app.use('/api/ledger',          require('./routes/ledger.routes'));
 app.use('/api/party',           require('./routes/party.routes'));
 app.use('/api/vehicle-sales',   require('./routes/vehicleSale.routes'));
+app.use('/api/vehicle-stock',   require('./routes/vehicleStock.routes'));
 app.use('/api/counter-sales',   require('./routes/counterSales'));
 app.use('/api/cashbook',        require('./routes/cashbook'));
 app.use('/api/expenses',        require('./routes/expenses'));

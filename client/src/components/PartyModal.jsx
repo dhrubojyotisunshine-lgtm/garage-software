@@ -9,8 +9,8 @@ const errorCls = 'text-red-500 text-xs mt-0.5';
 
 const EMPTY = { partyName: '', phone: '' };
 
-export default function PartyModal({ onClose, onSaved }) {
-  const [form, setForm] = useState({ ...EMPTY });
+export default function PartyModal({ item, onClose, onSaved }) {
+  const [form, setForm] = useState(item ? { partyName: item.partyName || '', phone: item.phone || '' } : { ...EMPTY });
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -32,9 +32,9 @@ export default function PartyModal({ onClose, onSaved }) {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setSaving(true);
     try {
-      const { data } = await partyApi.create(form);
-      toast({ title: 'Party added', variant: 'success' });
-      if (addNew) { setForm({ ...EMPTY }); setErrors({}); }
+      const { data } = item ? await partyApi.update(item._id, form) : await partyApi.create(form);
+      toast({ title: item ? 'Party updated' : 'Party added', variant: 'success' });
+      if (addNew && !item) { setForm({ ...EMPTY }); setErrors({}); }
       else onSaved?.(data);
     } catch (e) {
       const fieldErrs = e.response?.data?.errors;
@@ -49,7 +49,7 @@ export default function PartyModal({ onClose, onSaved }) {
         <div className="flex items-start justify-between px-8 pt-7 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-1 h-8 bg-red-500 rounded-full flex-shrink-0" />
-            <h2 className="text-2xl font-semibold text-gray-800">Add Party</h2>
+            <h2 className="text-2xl font-semibold text-gray-800">{item ? 'Edit Party' : 'Add Party'}</h2>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 mt-1">
             <X size={22} />
@@ -69,12 +69,14 @@ export default function PartyModal({ onClose, onSaved }) {
           </div>
 
           <div className="grid grid-cols-2 gap-4 pt-2">
-            <button onClick={() => handleSave(true)} disabled={saving}
-              className="py-3 bg-red-400 hover:bg-red-500 text-white rounded font-medium text-sm disabled:opacity-60 transition-colors">
-              Save &amp; New
-            </button>
+            {!item && (
+              <button onClick={() => handleSave(true)} disabled={saving}
+                className="py-3 bg-red-400 hover:bg-red-500 text-white rounded font-medium text-sm disabled:opacity-60 transition-colors">
+                Save &amp; New
+              </button>
+            )}
             <button onClick={() => handleSave(false)} disabled={saving}
-              className="py-3 bg-red-400 hover:bg-red-500 text-white rounded font-medium text-sm disabled:opacity-60 transition-colors">
+              className={`py-3 bg-red-400 hover:bg-red-500 text-white rounded font-medium text-sm disabled:opacity-60 transition-colors ${item ? 'col-span-2' : ''}`}>
               {saving ? 'Saving…' : 'Save'}
             </button>
           </div>
