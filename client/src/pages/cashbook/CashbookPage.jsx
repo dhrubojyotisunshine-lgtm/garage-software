@@ -41,8 +41,9 @@ function EntryModal({ type, onClose, onSaved, currentBalance }) {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const categories = type === 'IN' ? IN_CATEGORIES : OUT_CATEGORIES;
-  // Manual IN entries are cash-only (online income comes from Jobcard/Counter Sale).
-  const methods = type === 'IN' ? ['Cash'] : PAY_METHODS;
+  // Manual cashbook entries (IN and OUT) are cash-only; online flows come from
+  // Jobcard / Counter Sale sources, not manual entries.
+  const methods = ['Cash'];
   const hasReference = ['Jobcard Payment', 'Counter Sale Payment', 'PO Payment'].includes(form.category);
 
   // Close ref dropdown on outside click
@@ -139,7 +140,7 @@ function EntryModal({ type, onClose, onSaved, currentBalance }) {
 
         <div className="px-7 py-5 space-y-4">
           {/* Row 1: Amount + Date */}
-          <div className="grid grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Amount <span className="text-red-500">*</span></label>
               <input
@@ -160,7 +161,7 @@ function EntryModal({ type, onClose, onSaved, currentBalance }) {
           </div>
 
           {/* Row 2: Payment Method + Transaction Number */}
-          <div className="grid grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Select Payment Method <span className="text-red-500">*</span></label>
               <div className="relative">
@@ -177,7 +178,7 @@ function EntryModal({ type, onClose, onSaved, currentBalance }) {
           </div>
 
           {/* Row 3: Category + Reference Search */}
-          <div className="grid grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Select Category <span className="text-red-500">*</span></label>
               <div className="relative">
@@ -486,7 +487,7 @@ export default function CashbookPage() {
       </div>
 
       {/* ── Table ── */}
-      <div className="bg-white rounded-xl border border-border overflow-hidden">
+      <div className="bg-white rounded-xl border border-border overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-gray-50">

@@ -119,7 +119,7 @@ export default function LandingPage() {
               <Wrench size={18} className="text-white" />
             </div>
             <div className="leading-tight">
-              <div className="font-heading font-extrabold text-gray-900 text-lg">TTN Garage</div>
+              <div className="font-heading font-extrabold text-gray-900 text-lg">RECKON MOTORS</div>
               <div className="text-[10px] text-gray-400 -mt-0.5 tracking-wide">MANAGEMENT SYSTEM</div>
             </div>
           </a>
@@ -133,7 +133,7 @@ export default function LandingPage() {
 
           <div className="hidden md:flex items-center gap-3">
             <Link
-              to="/superadmin/login"
+              to="/superadmin"
               className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 hover:text-gray-900 px-3.5 py-2 rounded-xl transition-colors"
             >
               <ShieldCheck size={16} /> Admin
@@ -159,7 +159,7 @@ export default function LandingPage() {
             <a href="#workflow" onClick={() => setMenuOpen(false)} className="block text-sm font-medium text-gray-700 py-1.5">How it works</a>
             <a href="#modules" onClick={() => setMenuOpen(false)} className="block text-sm font-medium text-gray-700 py-1.5">Modules</a>
             <div className="flex gap-3 pt-2">
-              <Link to="/superadmin/login" className="flex-1 text-center text-sm font-semibold text-gray-700 border border-border px-4 py-2.5 rounded-xl">Admin</Link>
+              <Link to="/superadmin" className="flex-1 text-center text-sm font-semibold text-gray-700 border border-border px-4 py-2.5 rounded-xl">Admin</Link>
               <Link to="/login" className="flex-1 text-center text-sm font-semibold text-white bg-primary px-4 py-2.5 rounded-xl">Portal Login</Link>
             </div>
           </div>
@@ -194,7 +194,7 @@ export default function LandingPage() {
               <span className="block text-primary">the smart way.</span>
             </h1>
             <p className="mt-6 text-lg text-gray-500 max-w-xl mx-auto lg:mx-0">
-              TTN Garage brings jobcards, billing, inventory, customers, reminders and
+              RECKON MOTORS brings jobcards, billing, inventory, customers, reminders and
               reports into one beautiful platform — so you can spend less time on paperwork
               and more time on cars.
             </p>
@@ -208,7 +208,7 @@ export default function LandingPage() {
                 <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <Link
-                to="/superadmin/login"
+                to="/superadmin"
                 className="inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-800 font-semibold text-base px-7 py-3.5 rounded-2xl border border-border shadow-sm transition-all"
               >
                 <ShieldCheck size={18} /> Admin Login
@@ -434,7 +434,7 @@ export default function LandingPage() {
                 Portal Login <ArrowRight size={18} />
               </Link>
               <Link
-                to="/superadmin/login"
+                to="/superadmin"
                 className="inline-flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 text-white font-semibold px-8 py-3.5 rounded-2xl border border-white/30 backdrop-blur-sm transition-all"
               >
                 <ShieldCheck size={18} /> Admin Portal
@@ -452,7 +452,7 @@ export default function LandingPage() {
               <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
                 <Wrench size={18} className="text-white" />
               </div>
-              <span className="font-heading font-extrabold text-lg text-gray-900">TTN Garage</span>
+              <span className="font-heading font-extrabold text-lg text-gray-900">RECKON MOTORS</span>
             </div>
             <p className="text-sm text-gray-400 max-w-xs">
               The complete management system for modern automotive workshops.
@@ -473,7 +473,7 @@ export default function LandingPage() {
             <ul className="space-y-2 text-sm text-gray-400">
               <li><Link to="/login" className="hover:text-primary">Portal Login</Link></li>
               <li><Link to="/signup" className="hover:text-primary">Register a garage</Link></li>
-              <li><Link to="/superadmin/login" className="hover:text-primary">Admin Login</Link></li>
+              <li><Link to="/superadmin" className="hover:text-primary">Admin Login</Link></li>
             </ul>
           </div>
 
@@ -487,7 +487,7 @@ export default function LandingPage() {
         </div>
         <div className="border-t border-border">
           <div className="max-w-7xl mx-auto px-5 sm:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
-            <span>© {new Date().getFullYear()} TTN Garage · All rights reserved.</span>
+            <span>© {new Date().getFullYear()} RECKON MOTORS · All rights reserved.</span>
             <span className="flex items-center gap-1.5"><Building2 size={13} /> Built for automotive workshops</span>
           </div>
         </div>

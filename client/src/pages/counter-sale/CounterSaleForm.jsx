@@ -69,7 +69,7 @@ function QuickAddItemModal({ onClose, onAdded }) {
         <div className="px-6 py-4 space-y-4">
           <div>
             <p className={secCls}>Part Details</p>
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
               <div>
                 <label className={lCls}>Part Number</label>
                 <div className="relative">
@@ -92,7 +92,7 @@ function QuickAddItemModal({ onClose, onAdded }) {
                   className={`${iCls} pl-7`} placeholder="Search Company" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={lCls}>Unit</label>
                 <select value={form.unit} onChange={e => set('unit', e.target.value)} className={iCls}>
@@ -109,7 +109,7 @@ function QuickAddItemModal({ onClose, onAdded }) {
           </div>
           <div>
             <p className={secCls}>Stock Details</p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div><label className={lCls}>Quantity</label><input type="number" min="0" value={form.currentStock} onChange={e => set('currentStock', Number(e.target.value))} className={iCls} /></div>
               <div><label className={lCls}>Lower Limit</label><input type="number" min="0" value={form.lowerLimit} onChange={e => set('lowerLimit', Number(e.target.value))} className={iCls} /></div>
               <div><label className={lCls}>Rack Number</label><input value={form.rackNumber} onChange={e => set('rackNumber', e.target.value)} className={iCls} /></div>
@@ -117,7 +117,7 @@ function QuickAddItemModal({ onClose, onAdded }) {
           </div>
           <div>
             <p className={secCls}>Pricing Details</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label className={lCls}>Purchase Price</label><input type="number" min="0" value={form.purchasePrice} onChange={e => set('purchasePrice', Number(e.target.value))} className={iCls} /></div>
               <div>
                 <label className={lCls}>Selling Price <span className="text-red-500">*</span></label>
@@ -518,7 +518,7 @@ export default function CounterSaleForm() {
               )}
 
               {/* Optional email / address */}
-              <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-500 mb-0.5 block">Email</label>
                   <input value={form.customerEmail} onChange={e => set('customerEmail', e.target.value)} className={inputCls} placeholder="Optional" />
@@ -616,7 +616,7 @@ export default function CounterSaleForm() {
                 className="w-64 pl-7 pr-3 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:border-primary"
               />
               {(itemResults.length > 0 || itemSearch.trim()) && (
-                <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-[480px] max-h-56 overflow-auto">
+                <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-[min(480px,90vw)] max-h-56 overflow-auto">
                   {itemResults.map(r => (
                     <button key={r._id}
                       onClick={() => { addItem(r); setItemSearch(''); setItemResults([]); }}
@@ -643,7 +643,7 @@ export default function CounterSaleForm() {
         </div>
 
         {/* ── Bottom: Note + Billing ── */}
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="border border-gray-200 rounded-xl p-4">
             <p className="text-sm font-semibold text-gray-700 mb-3">Note to display on Invoice</p>
             <textarea value={form.note} onChange={e => set('note', e.target.value)} rows={8}
@@ -733,7 +733,7 @@ export default function CounterSaleForm() {
       </div>
 
       {/* ── Footer ── */}
-      <div className="sticky bottom-0 flex items-center justify-between px-6 py-3 bg-gray-800 border-t border-gray-700">
+      <div className="sticky bottom-0 flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-3 bg-gray-800 border-t border-gray-700">
         <button onClick={() => navigate('/counter-sale')}
           className="px-5 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded transition-colors">
           Cancel
@@ -760,7 +760,7 @@ export default function CounterSaleForm() {
       {/* ── New Customer Modal ── */}
       <Modal isOpen={showNewCustomerModal} onClose={() => setShowNewCustomerModal(false)} title="Add New Customer" size="lg">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Name <span className="text-red-500">*</span></label>
               <input value={newCust.name} onChange={e => setNC('name', e.target.value)} className={modalInputCls} placeholder="Customer name" />

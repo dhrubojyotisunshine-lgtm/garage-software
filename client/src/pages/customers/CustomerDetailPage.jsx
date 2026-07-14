@@ -208,7 +208,7 @@ export default function CustomerDetailPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         <StatCard icon={TrendingUp}  label="Total Visits" value={stats.visits || 0}      color="bg-blue-500" />
         <StatCard icon={IndianRupee} label="Total Spend"  value={fmtINR(stats.totalSpend)} color="bg-green-500" />
         <StatCard icon={IndianRupee} label="Avg Bill"     value={fmtINR(stats.avgBill)}    color="bg-purple-500" />

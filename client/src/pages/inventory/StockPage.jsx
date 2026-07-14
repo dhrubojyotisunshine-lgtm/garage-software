@@ -72,7 +72,7 @@ function CompatibleForField({ form, setForm, makes, models, onMakeChange }) {
       {!form.allVehicles && (
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           <div className="bg-gray-700 text-white text-xs text-center py-2 font-medium">Make, Model &amp; Variants</div>
-          <div className="p-2 flex gap-2">
+          <div className="p-2 flex flex-wrap gap-2">
             <div className="relative flex-1">
               <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
               <select
@@ -146,7 +146,7 @@ function SpareModal({ item, onClose, onSaved, makes }) {
   return (
     <ModalShell title={item ? 'Edit Spare' : 'Add Spare'} total={total} onClose={onClose}>
       <div className={sectionTitle}>Part Details</div>
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <div>
           <label className={labelCls}>Part Number <span className="text-red-500">*</span></label>
           <input value={form.partNumber || ''} onChange={e => setForm(f => ({ ...f, partNumber: e.target.value }))} className={inputCls} placeholder="Part Number" />
@@ -161,7 +161,7 @@ function SpareModal({ item, onClose, onSaved, makes }) {
         <label className={labelCls}>Spare Company</label>
         <input value={form.company || ''} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} className={inputCls} placeholder="Search Spare Company" />
       </div>
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <div>
           <label className={labelCls}>Unit</label>
           <select value={form.unit || 'units'} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} className={inputCls}>
@@ -181,7 +181,7 @@ function SpareModal({ item, onClose, onSaved, makes }) {
       </div>
 
       <div className={sectionTitle}>Stock Details</div>
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <div>
           <label className={labelCls}>Quantity</label>
           <input type="number" min="0" value={form.currentStock ?? 1} onChange={e => setForm(f => ({ ...f, currentStock: Number(e.target.value) }))} className={inputCls} />
@@ -197,7 +197,7 @@ function SpareModal({ item, onClose, onSaved, makes }) {
       </div>
 
       <div className={sectionTitle}>Pricing Details</div>
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
         <div>
           <label className={labelCls}>Purchase Price</label>
           <input type="number" min="0" value={form.purchasePrice ?? 0} onChange={e => setForm(f => ({ ...f, purchasePrice: Number(e.target.value) }))} className={inputCls} />
@@ -247,7 +247,7 @@ function LubeModal({ item, onClose, onSaved, makes }) {
   return (
     <ModalShell title={item ? 'Edit Lubes' : 'Add Lubes'} total={total} onClose={onClose}>
       <div className={sectionTitle}>Part Details</div>
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <div>
           <label className={labelCls}>Lube Number <span className="text-red-500">*</span></label>
           <input value={form.partNumber || ''} onChange={e => setForm(f => ({ ...f, partNumber: e.target.value }))} className={inputCls} placeholder="Lube Number" />
@@ -274,7 +274,7 @@ function LubeModal({ item, onClose, onSaved, makes }) {
       </div>
 
       <div className={sectionTitle}>Stock Details</div>
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <div>
           <label className={labelCls}>Quantity</label>
           <input type="number" min="0" value={form.currentStock ?? 1} onChange={e => setForm(f => ({ ...f, currentStock: Number(e.target.value) }))} className={inputCls} />
@@ -290,7 +290,7 @@ function LubeModal({ item, onClose, onSaved, makes }) {
       </div>
 
       <div className={sectionTitle}>Pricing Details</div>
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
         <div>
           <label className={labelCls}>Purchase Price</label>
           <input type="number" min="0" value={form.purchasePrice ?? 0} onChange={e => setForm(f => ({ ...f, purchasePrice: Number(e.target.value) }))} className={inputCls} />
@@ -340,7 +340,7 @@ function JobModal({ item, onClose, onSaved, makes }) {
   return (
     <ModalShell title={item ? 'Edit Job' : 'Add Jobs'} total={total} onClose={onClose}>
       <div className={sectionTitle}>Job Details</div>
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <div>
           <label className={labelCls}>Job Code <span className="text-red-500">*</span></label>
           <input value={form.jobCode || ''} onChange={e => setForm(f => ({ ...f, jobCode: e.target.value }))} className={inputCls} placeholder="Job Code" />
@@ -351,7 +351,7 @@ function JobModal({ item, onClose, onSaved, makes }) {
           <input value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} placeholder="Job Name" />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <div>
           <label className={labelCls}>Unit</label>
           <select value={form.unit || 'units'} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} className={inputCls}>
@@ -456,7 +456,7 @@ function GroupModal({ item, onClose, onSaved, makes }) {
   return (
     <ModalShell title={item ? 'Edit Group' : 'Add Group'} total={form.totalPrice} onClose={onClose} wide>
       <div className={sectionTitle}>Group Details</div>
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <div>
           <label className={labelCls}>Group Name <span className="text-red-500">*</span></label>
           <input value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} placeholder="Group Name" />
@@ -485,8 +485,8 @@ function GroupModal({ item, onClose, onSaved, makes }) {
       </div>
 
       {/* Items table */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
-        <div className="grid grid-cols-[1fr_80px_100px_120px_40px] bg-blue-600 text-white text-xs font-medium">
+      <div className="border border-gray-200 rounded-lg overflow-x-auto mb-4">
+        <div className="grid grid-cols-[1fr_80px_100px_120px_40px] min-w-[420px] bg-blue-600 text-white text-xs font-medium">
           <div className="px-3 py-2">Particulars</div>
           <div className="px-2 py-2 text-center">Quantity</div>
           <div className="px-2 py-2 text-center">Unit Price</div>
@@ -496,7 +496,7 @@ function GroupModal({ item, onClose, onSaved, makes }) {
         {form.items.filter(i => i.itemType === activeType).map((it, globalIdx) => {
           const idx = form.items.indexOf(it);
           return (
-            <div key={idx} className="grid grid-cols-[1fr_80px_100px_120px_40px] border-t border-gray-100 hover:bg-gray-50">
+            <div key={idx} className="grid grid-cols-[1fr_80px_100px_120px_40px] min-w-[420px] border-t border-gray-100 hover:bg-gray-50">
               <div className="px-3 py-2 text-sm text-gray-700">{it.name}</div>
               <div className="px-2 py-1 text-center">
                 <input type="number" min="1" value={it.qty}

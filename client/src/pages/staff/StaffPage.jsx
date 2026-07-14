@@ -285,7 +285,7 @@ function RoleModal({ editRole, onClose, onSaved }) {
               {allMenuOn ? 'Deselect all' : 'Select all'}
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             {MENU_ITEMS.map(m => {
               const on = form.menuAccess.includes(m.key);
               return (
@@ -558,7 +558,7 @@ export default function StaffPage() {
       </div>
 
       {/* Summary tiles */}
-      <div className="grid grid-cols-2 gap-4 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
         <div className="card flex items-center gap-4">
           <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
             <span className="font-heading font-bold text-blue-700 text-xl">{staff.length}</span>

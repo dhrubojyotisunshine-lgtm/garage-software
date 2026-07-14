@@ -20,6 +20,7 @@ import VehicleModelPicker from '../../components/ui/VehicleModelPicker';
 import { Modal, Drawer } from '../../components/ui/Modal';
 import { formatCurrency, formatDateInput, getInitials } from '../../utils/format';
 import useAuthStore from '../../store/authStore';
+import LastHistoryDrawer from './LastHistoryDrawer';
 
 const PAYMENT_TYPES = ['Cash', 'UPI', 'Card', 'Cheque'];
 const TRANSACTION_TYPES = ['Advance', 'Payment', 'Refund'];
@@ -61,6 +62,7 @@ export default function JobcardFormPage() {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', customerType: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '' });
 
   // Form state
@@ -533,7 +535,7 @@ export default function JobcardFormPage() {
       </div>
 
       {/* Top section: Customer + Jobcard details */}
-      <div className="grid grid-cols-2 gap-5 mb-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
         {/* Left: Customer */}
         <div className="card">
           <h3 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-2">
@@ -643,7 +645,7 @@ export default function JobcardFormPage() {
               )}
               {/* Settings-gated extra customer fields */}
               {(s.customerEmail || s.customerBirthday || s.customerPickupAddr || s.customerDeliveryAddr || s.driverDetails) && (
-                <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {s.customerEmail && (
                     <div>
                       <label className="text-xs font-medium text-gray-500 mb-0.5 block">Email</label>
@@ -694,10 +696,18 @@ export default function JobcardFormPage() {
 
         {/* Right: Jobcard details */}
         <div className="card">
-          <h3 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-2">
-            <Wrench size={15} className="text-primary" /> Jobcard Info
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex items-center justify-between mb-3 gap-2">
+            <h3 className="font-semibold text-gray-700 text-sm flex items-center gap-2">
+              <Wrench size={15} className="text-primary" /> Jobcard Info
+            </h3>
+            {selectedCustomer?._id && (
+              <button type="button" onClick={() => setShowHistory(true)}
+                className="px-3 py-1.5 rounded-lg bg-gray-500 text-white text-xs font-medium hover:bg-gray-600 transition-colors whitespace-nowrap">
+                Last History
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">KM Reading</label>
               <input type="number" value={form.kmReading} onChange={e => setField('kmReading', e.target.value)} className={inputCls} placeholder="e.g. 12500" />
@@ -779,7 +789,7 @@ export default function JobcardFormPage() {
       {/* Items section */}
       <div className="card mb-5">
         {/* Category tiles */}
-        <div className="grid grid-cols-5 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
           {[
             { type: 'Labour', label: 'Jobs', color: 'border-green-500 bg-green-50 text-green-700', activeColor: 'border-green-500 bg-green-500 text-white' },
             { type: 'Spare', label: 'Spare', color: 'border-blue-500 bg-blue-50 text-blue-700', activeColor: 'border-blue-500 bg-blue-500 text-white' },
@@ -998,7 +1008,7 @@ export default function JobcardFormPage() {
       </div>
 
       {/* Bottom section */}
-      <div className="grid grid-cols-2 gap-5 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
         {/* Left: Details tabs */}
         <div className="card">
           <h3 className="font-semibold text-gray-700 text-sm mb-4 pb-2 border-b border-border">Jobcard Details</h3>
@@ -1009,7 +1019,7 @@ export default function JobcardFormPage() {
                 <label className="text-xs font-medium text-gray-500 mb-1 block">Cost Estimate (₹)</label>
                 <input type="number" value={form.costEstimate} onChange={e => setField('costEstimate', e.target.value)} className={inputCls} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-500 mb-1 block">Delivery Date</label>
                   <DateField value={form.deliveryDate} onChange={e => setField('deliveryDate', e.target.value)} className={inputCls} />
@@ -1019,7 +1029,7 @@ export default function JobcardFormPage() {
                   <input type="time" value={form.deliveryTime} onChange={e => setField('deliveryTime', e.target.value)} className={inputCls} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-500 mb-1 block">Reminder KM</label>
                   <select value={form.reminderKm} onChange={e => setField('reminderKm', e.target.value)} className={`${selectCls} w-full`}>
@@ -1120,7 +1130,7 @@ export default function JobcardFormPage() {
                 && (jobcardStatuses.find(s => s._id === form.status)?.allowAddTransaction ?? (form.statusCategory === 'Completed'))
                 && <div className="border-t border-border pt-4 space-y-2">
                 <p className="text-xs font-semibold text-gray-600 uppercase">Add Transaction</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <select value={txnForm.type} onChange={e => setTxnForm(f => ({ ...f, type: e.target.value }))} className={`${selectCls} w-full`}>
                     {TRANSACTION_TYPES.map(t => <option key={t}>{t}</option>)}
                   </select>
@@ -1313,18 +1323,27 @@ export default function JobcardFormPage() {
       </Drawer>
 
       {/* Dent Marks Drawer */}
-      <Drawer isOpen={drawerOpen === 'dents'} onClose={() => setDrawerOpen(null)} title="Dent Marks" width="w-[520px]">
+      <Drawer isOpen={drawerOpen === 'dents'} onClose={() => setDrawerOpen(null)} title="Dent Marks" width="w-full sm:w-[520px]">
         <DentMarksDrawer marks={form.dentMarksArr} onChange={marks => setField('dentMarksArr', marks)} />
       </Drawer>
 
       {/* Photos Drawer */}
-      <Drawer isOpen={drawerOpen === 'photos'} onClose={() => setDrawerOpen(null)} title="Vehicle Photos" width="w-[480px]">
+      <Drawer isOpen={drawerOpen === 'photos'} onClose={() => setDrawerOpen(null)} title="Vehicle Photos" width="w-full sm:w-[480px]">
         <PhotosDrawer
           jobcardId={isEdit ? id : null}
           photos={form.photos || []}
           onUploaded={(photos) => setField('photos', photos)}
         />
       </Drawer>
+
+      {/* Last History Drawer */}
+      {showHistory && selectedCustomer?._id && (
+        <LastHistoryDrawer
+          customerId={selectedCustomer._id}
+          excludeId={isEdit ? id : null}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
 
       {/* New Customer Modal */}
       <Modal isOpen={showNewCustomerModal} onClose={() => setShowNewCustomerModal(false)} title="Add New Customer" size="lg">
@@ -1467,7 +1486,7 @@ function NewCustomerForm({ value, onChange, makes, models, onSave, onClose }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="text-xs font-medium text-gray-500 mb-1 block">Name <span className="text-red-500">*</span></label>
           <input value={value.name} onChange={e => set('name', e.target.value)} className={inputCls} placeholder="Customer name" />

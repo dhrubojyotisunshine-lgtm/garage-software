@@ -109,14 +109,14 @@ export default function PurchaseOrderPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
         <StatBlock icon={FileText}    label="Total Purchase Order" value={stats.total}                         iconBg="bg-blue-400" />
         <StatBlock icon={Wallet}      label="Total Amount"         value={`₹ ${(stats.amount || 0).toLocaleString('en-IN')}`}  iconBg="bg-orange-400" />
         <StatBlock icon={IndianRupee} label="Pending Balance"      value={`₹ ${(stats.pending || 0).toLocaleString('en-IN')}`} iconBg="bg-green-500" />
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="relative flex-1 max-w-lg">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}

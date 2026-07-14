@@ -38,7 +38,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }) {
   );
 }
 
-export function Drawer({ isOpen, onClose, title, children, width = 'w-96' }) {
+export function Drawer({ isOpen, onClose, title, children, width = 'w-full sm:w-96' }) {
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden';
     else document.body.style.overflow = '';

@@ -16,11 +16,11 @@ export default function SuperAdminLayout() {
   useAutoTooltips();
 
   useEffect(() => {
-    if (!token) { navigate('/superadmin/login'); return; }
+    if (!token) { navigate('/superadmin'); return; }
     if (!admin) fetchMe();
   }, []);
 
-  const handleLogout = () => { logout(); navigate('/superadmin/login'); };
+  const handleLogout = () => { logout(); navigate('/superadmin'); };
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -31,7 +31,7 @@ export default function SuperAdminLayout() {
             <Shield size={18} className="text-white" />
           </div>
           <div>
-            <div className="text-sm font-bold leading-tight">TTN Garage</div>
+            <div className="text-sm font-bold leading-tight">RECKON MOTORS</div>
             <div className="text-[10px] text-gray-400">Super Admin</div>
           </div>
         </div>

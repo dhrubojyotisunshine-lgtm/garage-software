@@ -44,7 +44,7 @@ const ALL_NAV = [
   { key: 'settings',    label: 'Settings',    icon: Settings,   path: '/settings' },
 ];
 
-export function Sidebar({ collapsed, onToggle }) {
+export function Sidebar({ collapsed, onToggle, mobileOpen = false, onNavigate }) {
   const location     = useLocation();
   const { garage, isStaff, staffUser } = useAuthStore();
   const [expandedItems, setExpandedItems] = useState({});
@@ -89,8 +89,13 @@ export function Sidebar({ collapsed, onToggle }) {
   return (
     <aside
       className={cn(
-        'fixed top-0 left-0 h-full bg-sidebar-bg flex flex-col transition-all duration-300 z-30',
-        collapsed ? 'w-16' : 'w-[230px]'
+        'fixed top-0 left-0 h-full bg-sidebar-bg flex flex-col transition-all duration-300 z-40',
+        // Mobile: full-width drawer, hidden off-canvas unless opened.
+        'w-[230px]',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full',
+        // Desktop (lg+): always visible fixed rail; width follows the collapse state.
+        'lg:translate-x-0',
+        collapsed ? 'lg:w-16' : 'lg:w-[230px]'
       )}
     >
       {/* Logo */}
@@ -142,6 +147,7 @@ export function Sidebar({ collapsed, onToggle }) {
                       <NavLink
                         key={child.path}
                         to={child.path}
+                        onClick={() => onNavigate?.()}
                         className={({ isActive }) => cn(
                           'flex items-center px-3 py-2 rounded-lg text-xs text-sidebar-text/80 hover:text-white hover:bg-sidebar-hover transition-colors',
                           isActive && 'text-white bg-sidebar-active'
@@ -160,6 +166,7 @@ export function Sidebar({ collapsed, onToggle }) {
             <NavLink
               key={item.path}
               to={item.path}
+              onClick={() => onNavigate?.()}
               className={({ isActive }) => cn('sidebar-item', isActive && 'active')}
               title={collapsed ? item.label : undefined}
             >

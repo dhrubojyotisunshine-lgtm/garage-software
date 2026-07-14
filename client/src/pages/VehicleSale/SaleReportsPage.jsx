@@ -249,8 +249,8 @@ export default function SaleReportsPage() {
         </div>
       ) : (
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 mr-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 sm:mr-3">
               {report.stats.map(([l, v]) => <StatCard key={l} label={l} value={v} />)}
             </div>
             <button onClick={exportCSV}

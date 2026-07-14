@@ -162,7 +162,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Today + open KPI row */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <MiniStatCard title="Today's Revenue" value={formatCurrency(extended?.today?.revenue || 0)} icon={TrendingUp} color="bg-primary" sub={`${extended?.today?.jobcards || 0} jobcards`} />
         <MiniStatCard title="Open Jobcards"   value={extended?.openJobcards ?? '—'} icon={FileText}    color="bg-amber-500" sub="Currently active" />
         <MiniStatCard title="This Month"      value={formatCurrency(extended?.month?.revenue || 0)} icon={CheckCircle} color="bg-green-500" sub={`${extended?.month?.jobcards || 0} jobcards`} />
@@ -170,7 +170,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Original summary cards */}
-      <div className="flex gap-5 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
         <StatCard
           title="Revenue"
           value={formatCurrency(summary?.revenue || 0)}
@@ -202,7 +202,7 @@ export default function DashboardPage() {
           <h3 className="font-heading font-semibold text-gray-800">Revenue Overview</h3>
           <div className="flex items-center gap-3 flex-wrap">
             {/* From / To date range — overrides the period preset when both are set */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <label className="text-xs text-gray-500">From</label>
               <DateField value={revStart} onChange={e => setRevStart(e.target.value)}
                 className="border border-border rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white" />
@@ -249,7 +249,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Breakdowns row */}
-      <div className="grid grid-cols-3 gap-5 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
         {/* Item type breakdown */}
         <div className="card">
           <h3 className="font-heading font-semibold text-gray-800 mb-4 text-sm">Item Type — This Month</h3>
@@ -309,7 +309,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Bottom charts */}
-      <div className="grid grid-cols-2 gap-5 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
         {/* Vehicle make pie */}
         <div className="card">
           <h3 className="font-heading font-semibold text-gray-800 mb-4">Jobcards by Vehicle Make</h3>

@@ -19,7 +19,7 @@ export default function LedgerForm({ form, errors, set, patch }) {
         {errors.partyName && <p className={errorCls}>{errors.partyName}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>Amount <span className="text-red-500">*</span></label>
           <input type="number" value={form.amount} onChange={e => set('amount', e.target.value)} className={inputCls} />

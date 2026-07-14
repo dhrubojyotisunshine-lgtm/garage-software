@@ -83,7 +83,7 @@ function MonthView({ year, month, appointmentMap, onClickDate, onClickAppt }) {
   }
 
   return (
-    <div className="flex-1 overflow-hidden">
+    <div className="min-w-[720px]">
       {/* Day headers */}
       <div className="grid grid-cols-7 border-b border-gray-200">
         {DAYS.map(d => (
@@ -125,7 +125,7 @@ function WeekView({ currentDate, appointmentMap, onClickDate, onClickAppt }) {
   });
 
   return (
-    <div className="flex-1 overflow-hidden">
+    <div className="min-w-[720px]">
       <div className="grid grid-cols-7 border-b border-gray-200">
         {days.map((d, i) => {
           const key = toDateKey(d);
@@ -457,7 +457,7 @@ function BookModal({ initialDate, appointment, vehicleMakes, vehicleModels, onCl
           </div>
 
           {/* Date + Time */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Date */}
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Select Date <span className="text-red-500">*</span></label>
@@ -520,7 +520,7 @@ function BookModal({ initialDate, appointment, vehicleMakes, vehicleModels, onCl
               <Car size={16} className="text-red-400" />
               <span className="font-semibold text-gray-700 text-sm underline underline-offset-2">Vehicle Details</span>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Vehicle Number</label>
                 <input
@@ -569,7 +569,7 @@ function BookModal({ initialDate, appointment, vehicleMakes, vehicleModels, onCl
               <User size={16} className="text-red-400" />
               <span className="font-semibold text-gray-700 text-sm underline underline-offset-2">Customer Details</span>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="col-span-2 sm:col-span-1">
                 <label className="block text-sm text-gray-600 mb-1">Customer Name <span className="text-red-500">*</span></label>
                 <input
@@ -807,7 +807,7 @@ export default function AppointmentPage() {
   return (
     <div className="flex flex-col h-full -m-6">
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+      <div className="flex flex-wrap items-center gap-3 px-4 sm:px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
         {/* Book button */}
         <button
           onClick={() => { setEditAppt(null); setBookDate(today()); setBookModal(true); }}

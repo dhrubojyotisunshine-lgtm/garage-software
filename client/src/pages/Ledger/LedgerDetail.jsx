@@ -219,7 +219,7 @@ export default function LedgerDetail() {
         <div>
           {/* Filters + export */}
           <div className="flex items-center gap-3 mb-4 flex-wrap">
-            <div className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-2 bg-white">
+            <div className="flex flex-wrap items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-2 bg-white">
               <span className="text-xs text-gray-400">From</span>
               <DateField value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="text-sm focus:outline-none text-gray-600" />
               <span className="text-xs text-gray-400">To</span>

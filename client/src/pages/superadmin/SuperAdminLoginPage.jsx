@@ -30,7 +30,7 @@ export default function SuperAdminLoginPage() {
             <Shield size={32} className="text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-800">Super Admin</h1>
-          <p className="text-gray-500 text-sm mt-1">TTN Garage Franchise Portal</p>
+          <p className="text-gray-500 text-sm mt-1">RECKON MOTORS Franchise Portal</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

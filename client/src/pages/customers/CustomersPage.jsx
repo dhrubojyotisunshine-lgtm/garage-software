@@ -243,7 +243,7 @@ export default function CustomersPage() {
       {/* Add Customer Modal */}
       <Modal isOpen={showNewModal} onClose={() => setShowNewModal(false)} title="Add New Customer" size="lg">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Name <span className="text-red-500">*</span></label>
               <input value={newCustomer.name} onChange={e => set('name', e.target.value)} className={inputCls} placeholder="Customer name" />

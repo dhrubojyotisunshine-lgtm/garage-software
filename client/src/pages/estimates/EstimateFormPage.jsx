@@ -247,7 +247,7 @@ export default function EstimateFormPage() {
       </div>
 
       {/* ── Top section: Customer + Estimate Info ── */}
-      <div className="grid grid-cols-2 gap-5 mb-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
 
         {/* Left: Customer Details */}
         <div className="card">
@@ -333,7 +333,7 @@ export default function EstimateFormPage() {
           <h3 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-2">
             <Pencil size={15} className="text-primary" /> Estimate Info
           </h3>
-          <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
                 Estimate Date
@@ -368,7 +368,7 @@ export default function EstimateFormPage() {
       {/* ── Items section ── */}
       <div className="card mb-5">
         {/* Category tiles */}
-        <div className="grid grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           {[
             { type: 'Labour', label: 'Jobs', color: 'border-green-500 bg-green-50 text-green-700', activeColor: 'border-green-500 bg-green-500 text-white' },
             { type: 'Spare',  label: 'Spare', color: 'border-blue-500 bg-blue-50 text-blue-700',   activeColor: 'border-blue-500 bg-blue-500 text-white' },
@@ -493,7 +493,7 @@ export default function EstimateFormPage() {
       </div>
 
       {/* ── Bottom bar ── */}
-      <div className="flex items-center justify-end gap-3 bg-white rounded-2xl border border-border p-4">
+      <div className="flex flex-wrap items-center justify-end gap-3 bg-white rounded-2xl border border-border p-4">
         <Button variant="ghost" onClick={() => navigate('/estimate')}>Cancel</Button>
         {isEdit && (
           <Button variant="outline" onClick={() => window.open(`/estimate-print/${id}`, '_blank')}>
@@ -567,7 +567,7 @@ function NewCustomerForm({ value, onChange, makes, models, onSave, onClose }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="text-xs font-medium text-gray-500 mb-1 block">Name <span className="text-red-500">*</span></label>
           <input value={value.name} onChange={e => set('name', e.target.value)} className={inputCls} placeholder="Customer name" />

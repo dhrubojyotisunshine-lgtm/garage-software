@@ -59,8 +59,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public */}
-        <Route path="/" element={<LandingPage />} />
+        {/* Public — landing page retired; root goes straight to login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
 
@@ -116,10 +116,10 @@ function App() {
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
 
-        {/* Super Admin */}
-        <Route path="/superadmin/login" element={<SuperAdminLoginPage />} />
+        {/* Super Admin — login now lives at /superadmin (old /superadmin/login redirects here) */}
+        <Route path="/superadmin/login" element={<Navigate to="/superadmin" replace />} />
+        <Route path="/superadmin" element={<SuperAdminLoginPage />} />
         <Route path="/superadmin" element={<SuperAdminLayout />}>
-          <Route index element={<Navigate to="/superadmin/dashboard" replace />} />
           <Route path="dashboard" element={<SuperAdminDashboard />} />
           <Route path="garages"   element={<GaragesPage />} />
         </Route>
