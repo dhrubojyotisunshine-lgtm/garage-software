@@ -21,6 +21,9 @@ export default function Step2Customer({ form, setNested, errors }) {
         <Field label="PAN Number">
           <input className={inputCls} value={c.pan} onChange={e => setNested('customer', 'pan', e.target.value)} />
         </Field>
+        <Field label="Aadhar Number">
+          <input className={inputCls} value={c.aadhar} onChange={e => setNested('customer', 'aadhar', e.target.value)} />
+        </Field>
       </div>
     </SectionCard>
   );

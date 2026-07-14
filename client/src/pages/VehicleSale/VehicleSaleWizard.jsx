@@ -56,7 +56,7 @@ export default function VehicleSaleWizard() {
         bookingDate: dateStr(data.bookingDate),
         deliveryDate: dateStr(data.deliveryDate),
         payment: { ...emptySale().payment, ...data.payment, paymentDate: dateStr(data.payment?.paymentDate) },
-        vehicles: data.vehicles?.length ? data.vehicles : emptySale().vehicles
+        vehicles: data.vehicles?.length ? data.vehicles.map(v => ({ ...v, _saved: true })) : emptySale().vehicles
       });
     } catch { toast({ title: 'Failed to load sale', variant: 'error' }); }
     finally { setLoading(false); }

@@ -20,11 +20,83 @@ function dateRangeFilter(dateFrom, dateTo) {
   return Object.keys(f).length ? f : null;
 }
 
-/* ── Running balance (all-time) ── */
+/* ── Synthesized payment rows from Jobcard & CounterSale transactions ──
+   These modules own their payment records; the Cashbook reads them (read-only).
+   Jobcard: Advance/Payment = IN, Refund = OUT. CounterSale: always IN. */
+async function sourceRows(gid, dr) {
+  const dateStage = dr ? [{ $match: { 'transactions.date': dr } }] : [];
+  const jobcard = await Jobcard.aggregate([
+    { $match: { garageId: gid, deletedAt: null } },
+    { $unwind: '$transactions' },
+    ...dateStage,
+    { $project: {
+      _id: { $concat: ['jc:', { $toString: '$_id' }, ':', { $toString: '$transactions._id' }] },
+      source: 'jobcard',
+      type: { $cond: [{ $eq: ['$transactions.type', 'Refund'] }, 'OUT', 'IN'] },
+      amount: { $ifNull: ['$transactions.amount', 0] },
+      paymentMethod: '$transactions.paymentType',
+      category: 'Jobcard Payment',
+      date: '$transactions.date',
+      description: { $ifNull: ['$transactions.details', ''] },
+      referenceType: 'Jobcard',
+      referenceNumber: '$jobcardNumber',
+      referenceName: '$customerName',
+      referenceMobile: '$customerMobile'
+    } }
+  ]);
+  const counter = await CounterSale.aggregate([
+    { $match: { garageId: gid, active: { $ne: false } } },
+    { $unwind: '$transactions' },
+    ...dateStage,
+    { $project: {
+      _id: { $concat: ['cs:', { $toString: '$_id' }, ':', { $toString: '$transactions._id' }] },
+      source: 'countersale',
+      type: 'IN',
+      amount: { $ifNull: ['$transactions.amount', 0] },
+      paymentMethod: '$transactions.paymentType',
+      category: 'Counter Sale Payment',
+      date: '$transactions.date',
+      description: { $ifNull: ['$transactions.transactionNumber', ''] },
+      referenceType: 'CounterSale',
+      referenceNumber: '$counterNumber',
+      referenceName: '$customerName',
+      referenceMobile: '$customerMobile'
+    } }
+  ]);
+  return [...jobcard, ...counter];
+}
+
+/* ── Merge manual cashbook entries (excluding Jobcard/CounterSale-linked, to
+   avoid double-counting) with the synthesized source rows. ── */
+async function mergedRows(gid, dr) {
+  const mq = { garageId: gid, active: { $ne: false }, referenceType: { $nin: ['Jobcard', 'CounterSale'] } };
+  if (dr) mq.date = dr;
+  const manual = await CashbookEntry.find(mq).lean();
+  const manualRows = manual.map(e => ({ ...e, source: 'manual' }));
+  const src = await sourceRows(gid, dr);
+  return [...manualRows, ...src];
+}
+
+/* ── Reduce rows to summary totals ── */
+function reduceStats(rows) {
+  let cashReceived = 0, cashReceivedCash = 0, cashReceivedOnline = 0, cashSpend = 0;
+  for (const e of rows) {
+    if (e.type === 'IN') {
+      cashReceived += e.amount;
+      if (e.paymentMethod === 'Cash') cashReceivedCash += e.amount;
+      else if (ONLINE_METHODS.includes(e.paymentMethod)) cashReceivedOnline += e.amount;
+    } else if (e.type === 'OUT') {
+      cashSpend += e.amount;
+    }
+  }
+  return { cashReceived, cashReceivedCash, cashReceivedOnline, cashSpend };
+}
+
+/* ── Running balance (all-time; includes jobcard/countersale transactions) ── */
 async function getBalance(garageId) {
-  const entries = await CashbookEntry.find({ garageId, active: { $ne: false } }, 'type amount');
-  const inTotal  = entries.filter(e => e.type === 'IN').reduce((s, e) => s + e.amount, 0);
-  const outTotal = entries.filter(e => e.type === 'OUT').reduce((s, e) => s + e.amount, 0);
+  const rows = await mergedRows(garageId, null);
+  const inTotal  = rows.filter(e => e.type === 'IN').reduce((s, e) => s + e.amount, 0);
+  const outTotal = rows.filter(e => e.type === 'OUT').reduce((s, e) => s + e.amount, 0);
   return { inTotal, outTotal, balance: inTotal - outTotal };
 }
 
@@ -32,26 +104,13 @@ async function getBalance(garageId) {
 router.get('/stats', async (req, res) => {
   try {
     const gid = req.garage._id;
-    const { dateFrom, dateTo } = req.query;
-    const q = { garageId: gid, active: { $ne: false } };
-    const dr = dateRangeFilter(dateFrom, dateTo);
-    if (dr) q.date = dr;
-
-    const entries = await CashbookEntry.find(q, 'type amount paymentMethod');
-    let cashReceived = 0, cashReceivedCash = 0, cashReceivedOnline = 0, cashSpend = 0;
-    for (const e of entries) {
-      if (e.type === 'IN') {
-        cashReceived += e.amount;
-        if (e.paymentMethod === 'Cash')            cashReceivedCash += e.amount;
-        else if (ONLINE_METHODS.includes(e.paymentMethod)) cashReceivedOnline += e.amount;
-      } else if (e.type === 'OUT') {
-        cashSpend += e.amount;
-      }
-    }
+    const dr = dateRangeFilter(req.query.dateFrom, req.query.dateTo);
+    const rows = await mergedRows(gid, dr);
+    const totals = reduceStats(rows);
 
     // Wallet balance stays all-time regardless of the date filter.
     const { balance } = await getBalance(gid);
-    res.json({ cashReceived, cashReceivedCash, cashReceivedOnline, cashSpend, balance });
+    res.json({ ...totals, balance });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
@@ -114,28 +173,29 @@ router.get('/pending', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { search, category, date, dateFrom, dateTo, type, payMode } = req.query;
-    const q = { garageId: req.garage._id, active: { $ne: false } };
-    if (search) q.$or = [
-      { referenceName:   { $regex: search, $options: 'i' } },
-      { referenceMobile: { $regex: search, $options: 'i' } },
-      { referenceNumber: { $regex: search, $options: 'i' } }
-    ];
-    if (category && category !== 'all') q.category = category;
-    if (type     && type !== 'all')     q.type = type;
-    // Cash vs Online (UPI / Card / Cheque)
-    if (payMode === 'cash')   q.paymentMethod = 'Cash';
-    if (payMode === 'online') q.paymentMethod = { $in: ONLINE_METHODS };
-    const dr = dateRangeFilter(dateFrom, dateTo);
-    if (dr) {
-      q.date = dr;
-    } else if (date) {
+    let dr = dateRangeFilter(dateFrom, dateTo);
+    if (!dr && date) {
       const d = new Date(date);
       const start = new Date(d); start.setHours(0, 0, 0, 0);
       const end   = new Date(d); end.setHours(23, 59, 59, 999);
-      q.date = { $gte: start, $lte: end };
+      dr = { $gte: start, $lte: end };
     }
-    const entries = await CashbookEntry.find(q).sort({ createdAt: -1 });
-    res.json(entries);
+
+    let rows = await mergedRows(req.garage._id, dr);
+
+    // Display filters (applied uniformly across manual + source rows).
+    if (category && category !== 'all') rows = rows.filter(r => r.category === category);
+    if (type     && type !== 'all')     rows = rows.filter(r => r.type === type);
+    if (payMode === 'cash')   rows = rows.filter(r => r.paymentMethod === 'Cash');
+    if (payMode === 'online') rows = rows.filter(r => ONLINE_METHODS.includes(r.paymentMethod));
+    if (search) {
+      const s = search.toLowerCase();
+      rows = rows.filter(r => [r.referenceName, r.referenceMobile, r.referenceNumber, r.description]
+        .some(v => (v || '').toString().toLowerCase().includes(s)));
+    }
+
+    rows.sort((a, b) => new Date(b.date) - new Date(a.date));
+    res.json(rows);
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

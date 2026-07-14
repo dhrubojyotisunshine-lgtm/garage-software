@@ -30,7 +30,6 @@ const ALL_NAV = [
     key: 'sale', label: 'Vehicle Sale', icon: Car, path: '/sale/vehicle-sales',
     children: [
       { label: 'Vehicle Sales',    path: '/sale/vehicle-sales' },
-      { label: 'Sale List',        path: '/sale/list' },
       { label: 'Sale Reports',     path: '/sale/reports' },
       { label: 'Stock Management', path: '/vehicle-stock' }
     ]

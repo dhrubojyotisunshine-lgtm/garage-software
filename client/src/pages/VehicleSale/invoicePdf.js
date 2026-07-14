@@ -41,7 +41,8 @@ export function downloadInvoicePdf(sale) {
   const custLines = [
     sale.customer?.name, sale.customer?.mobile && `Mobile: ${sale.customer.mobile}`,
     sale.customer?.address, sale.customer?.email,
-    sale.customer?.pan && `PAN: ${sale.customer.pan}`
+    sale.customer?.pan && `PAN: ${sale.customer.pan}`,
+    sale.customer?.aadhar && `Aadhar: ${sale.customer.aadhar}`
   ].filter(Boolean);
   custLines.forEach(l => { doc.text(String(l), M, y); y += 12; });
   y += 6;

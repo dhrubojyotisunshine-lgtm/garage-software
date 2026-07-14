@@ -17,6 +17,10 @@ const staffRoleSchema = new mongoose.Schema({
     canEdit:      { type: Boolean, default: false },
     canUploadCsv: { type: Boolean, default: false },
   },
+  vehicleSalePermissions: {
+    canEditVehicle:   { type: Boolean, default: false },
+    canDeleteVehicle: { type: Boolean, default: false },
+  },
   isDefault: { type: Boolean, default: false },
   active:    { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now }

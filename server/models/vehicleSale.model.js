@@ -43,7 +43,8 @@ const vehicleSaleSchema = new mongoose.Schema({
     mobile:  { type: String, required: true },
     address: { type: String, default: '' },
     email:   { type: String, default: '' },
-    pan:     { type: String, default: '' }
+    pan:     { type: String, default: '' },
+    aadhar:  { type: String, default: '' }
   },
 
   // Step 3 — Vehicle Details

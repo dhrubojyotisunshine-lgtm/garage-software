@@ -4,10 +4,13 @@ import { Search, Calendar, Trash2, TrendingUp, TrendingDown, X, ChevronDown, Wal
 import { cashbookApi } from '../../api/cashbook';
 import { useToast } from '../../components/ui/Toast';
 
-const IN_CATEGORIES  = ['Jobcard Payment', 'Counter Sale Payment', 'Other Income'];
+// Manual IN entries are limited to "Other Income" — Jobcard/Counter Sale payments
+// flow in automatically from their own modules.
+const IN_CATEGORIES  = ['Other Income'];
 const OUT_CATEGORIES = ['PO Payment', 'Other Expense'];
 const PAY_METHODS    = ['Cash', 'UPI', 'Card', 'Cheque'];
-const ALL_CATEGORIES = [...IN_CATEGORIES, ...OUT_CATEGORIES];
+// Filter dropdown still lists the source categories so the merged list stays filterable.
+const ALL_CATEGORIES = ['Jobcard Payment', 'Counter Sale Payment', 'Other Income', 'PO Payment', 'Other Expense'];
 const today = () => new Date().toISOString().slice(0, 10);
 
 function fmtDateTime(d) {
@@ -38,6 +41,8 @@ function EntryModal({ type, onClose, onSaved, currentBalance }) {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const categories = type === 'IN' ? IN_CATEGORIES : OUT_CATEGORIES;
+  // Manual IN entries are cash-only (online income comes from Jobcard/Counter Sale).
+  const methods = type === 'IN' ? ['Cash'] : PAY_METHODS;
   const hasReference = ['Jobcard Payment', 'Counter Sale Payment', 'PO Payment'].includes(form.category);
 
   // Close ref dropdown on outside click
@@ -160,7 +165,7 @@ function EntryModal({ type, onClose, onSaved, currentBalance }) {
               <label className="block text-sm font-medium text-gray-600 mb-1">Select Payment Method <span className="text-red-500">*</span></label>
               <div className="relative">
                 <select value={form.paymentMethod} onChange={e => set('paymentMethod', e.target.value)} className={iCls + ' appearance-none pr-9'}>
-                  {PAY_METHODS.map(m => <option key={m}>{m}</option>)}
+                  {methods.map(m => <option key={m}>{m}</option>)}
                 </select>
                 <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
@@ -376,9 +381,12 @@ export default function CashbookPage() {
         </div>
       </div>
 
-      {/* ── Summary card ── */}
+      {/* ── Summary cards ── */}
+      {(() => {
+        const cashBalance = (stats.cashReceivedCash || 0) - (stats.cashSpend || 0);
+        return (
       <div className="rounded-2xl overflow-hidden border border-blue-100 mb-6" style={{ background: 'linear-gradient(135deg, #e8f4fd 0%, #dbeafe 100%)' }}>
-        <div className="grid grid-cols-2 divide-x divide-blue-200">
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-blue-200">
           <div className="flex items-center gap-4 px-8 py-6">
             <div className="w-14 h-14 rounded-2xl bg-white/70 flex items-center justify-center shadow-sm">
               <TrendingUp size={26} className="text-green-500" />
@@ -401,15 +409,22 @@ export default function CashbookPage() {
               <div className="text-2xl font-bold text-gray-800">₹ {stats.cashSpend.toLocaleString('en-IN')}</div>
             </div>
           </div>
-        </div>
-        <div className="bg-blue-400 px-6 py-2 flex items-center justify-between">
-          <span className="text-white text-sm font-semibold">{todayLabel} Summary</span>
-          <div className="flex items-center gap-2 text-white text-sm">
-            <Wallet size={15} />
-            <span className="font-semibold">Balance: ₹ {stats.balance.toLocaleString('en-IN')}</span>
+          <div className="flex items-center gap-4 px-8 py-6">
+            <div className="w-14 h-14 rounded-2xl bg-white/70 flex items-center justify-center shadow-sm">
+              <Wallet size={26} className="text-blue-500" />
+            </div>
+            <div>
+              <div className="text-xs text-blue-600 font-medium mb-0.5">Balance (Cash − Cash Spend)</div>
+              <div className={`text-2xl font-bold ${cashBalance < 0 ? 'text-red-600' : 'text-gray-800'}`}>₹ {cashBalance.toLocaleString('en-IN')}</div>
+              <div className="flex items-center gap-2 mt-1 text-xs font-medium">
+                <span className="px-2 py-0.5 rounded-full bg-white/70 text-gray-500">Online ₹ {(stats.cashReceivedOnline || 0).toLocaleString('en-IN')}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+        );
+      })()}
 
       {/* ── Filters ── */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">
@@ -513,13 +528,17 @@ export default function CashbookPage() {
                 </td>
                 <td className="py-3 px-5 text-gray-600">{e.paymentMethod}</td>
                 <td className="py-3 px-5 text-center">
-                  <button
-                    onClick={() => handleDelete(e._id)}
-                    disabled={deletingId === e._id}
-                    className="p-1.5 text-red-400 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                  >
-                    <X size={15} />
-                  </button>
+                  {e.source === 'manual' ? (
+                    <button
+                      onClick={() => handleDelete(e._id)}
+                      disabled={deletingId === e._id}
+                      className="p-1.5 text-red-400 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                    >
+                      <X size={15} />
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-gray-400 uppercase">{e.referenceType}</span>
+                  )}
                 </td>
               </tr>
             ))}

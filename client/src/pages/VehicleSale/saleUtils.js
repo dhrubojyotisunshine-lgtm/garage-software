@@ -16,7 +16,7 @@ export const emptyVehicle = () => ({
 export const emptySale = () => ({
   dealer: { name: '', address: '', phone: '', email: '', gstin: '' },
   invoiceNo: '', saleDate: '', saleType: 'Cash', salesExecutive: '',
-  customer: { name: '', mobile: '', address: '', email: '', pan: '' },
+  customer: { name: '', mobile: '', address: '', email: '', pan: '', aadhar: '' },
   vehicles: [emptyVehicle()],
   bookingNo: '', bookingDate: '', deliveryDate: '',
   billing: { exShowroom: 0, gst: 0, tcs: 0, accessories: 0, subtotal: 0, netVehicleAmount: 0 },

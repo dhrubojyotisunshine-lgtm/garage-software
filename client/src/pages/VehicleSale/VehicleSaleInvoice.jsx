@@ -78,7 +78,7 @@ export default function VehicleSaleInvoice() {
           <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Bill To</div>
           <div className="text-sm font-medium text-gray-800">{c.name}</div>
           <div className="text-xs text-gray-500">
-            {c.mobile && <span>Mobile: {c.mobile} </span>}{c.email && <span>· {c.email} </span>}{c.pan && <span>· PAN: {c.pan}</span>}
+            {c.mobile && <span>Mobile: {c.mobile} </span>}{c.email && <span>· {c.email} </span>}{c.pan && <span>· PAN: {c.pan}</span>}{c.aadhar && <span>· Aadhar: {c.aadhar}</span>}
           </div>
           {c.address && <div className="text-xs text-gray-500 whitespace-pre-line">{c.address}</div>}
         </div>

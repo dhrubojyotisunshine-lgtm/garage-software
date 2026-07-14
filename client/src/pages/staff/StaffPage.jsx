@@ -47,6 +47,11 @@ const STOCK_PERMISSIONS = [
   { key: 'canUploadCsv', label: 'Upload stock via CSV' },
 ];
 
+const VEHICLE_SALE_PERMISSIONS = [
+  { key: 'canEditVehicle',   label: 'Edit a saved vehicle (Vehicle Sale edit)' },
+  { key: 'canDeleteVehicle', label: 'Delete a saved vehicle (Vehicle Sale edit)' },
+];
+
 const EMPTY_ROLE = {
   name: '',
   menuAccess: ['dashboard', 'jobcards'],
@@ -56,6 +61,9 @@ const EMPTY_ROLE = {
   },
   stockPermissions: {
     canAdd: false, canEdit: false, canUploadCsv: false,
+  },
+  vehicleSalePermissions: {
+    canEditVehicle: false, canDeleteVehicle: false,
   },
 };
 
@@ -192,8 +200,9 @@ function RoleModal({ editRole, onClose, onSaved }) {
         menuAccess: [...(editRole.menuAccess || [])],
         jobcardPermissions: { ...EMPTY_ROLE.jobcardPermissions, ...(editRole.jobcardPermissions || {}) },
         stockPermissions: { ...EMPTY_ROLE.stockPermissions, ...(editRole.stockPermissions || {}) },
+        vehicleSalePermissions: { ...EMPTY_ROLE.vehicleSalePermissions, ...(editRole.vehicleSalePermissions || {}) },
       }
-    : { ...EMPTY_ROLE, menuAccess: [...EMPTY_ROLE.menuAccess], jobcardPermissions: { ...EMPTY_ROLE.jobcardPermissions }, stockPermissions: { ...EMPTY_ROLE.stockPermissions } }
+    : { ...EMPTY_ROLE, menuAccess: [...EMPTY_ROLE.menuAccess], jobcardPermissions: { ...EMPTY_ROLE.jobcardPermissions }, stockPermissions: { ...EMPTY_ROLE.stockPermissions }, vehicleSalePermissions: { ...EMPTY_ROLE.vehicleSalePermissions } }
   );
   const [saving, setSaving] = useState(false);
 
@@ -217,6 +226,13 @@ function RoleModal({ editRole, onClose, onSaved }) {
     setForm(f => ({
       ...f,
       stockPermissions: { ...f.stockPermissions, [key]: !f.stockPermissions[key] },
+    }));
+  };
+
+  const toggleVehicleSalePerm = (key) => {
+    setForm(f => ({
+      ...f,
+      vehicleSalePermissions: { ...f.vehicleSalePermissions, [key]: !f.vehicleSalePermissions[key] },
     }));
   };
 
@@ -326,6 +342,29 @@ function RoleModal({ editRole, onClose, onSaved }) {
                     type="checkbox"
                     checked={on}
                     onChange={() => toggleStockPerm(p.key)}
+                    className="accent-green-600 w-3.5 h-3.5 flex-shrink-0"
+                  />
+                  <span className="text-sm text-gray-700">{p.label}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Vehicle Sale permissions */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Sale Permissions</label>
+          <div className="space-y-1.5">
+            {VEHICLE_SALE_PERMISSIONS.map(p => {
+              const on = form.vehicleSalePermissions[p.key];
+              return (
+                <label key={p.key} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border cursor-pointer transition-colors ${
+                  on ? 'bg-green-50 border-green-200' : 'border-border hover:bg-gray-50'
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    onChange={() => toggleVehicleSalePerm(p.key)}
                     className="accent-green-600 w-3.5 h-3.5 flex-shrink-0"
                   />
                   <span className="text-sm text-gray-700">{p.label}</span>

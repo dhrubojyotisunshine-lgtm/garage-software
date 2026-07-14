@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Pencil, Trash2, Download, Wallet, History } from 'lucide-react';
+import { Search, Plus, Pencil, Trash2, Download, Wallet, History, Eye } from 'lucide-react';
 import { vehicleSaleApi } from '../../api/vehicleSaleApi';
 import { useToast } from '../../components/ui/Toast';
 import { formatCurrency, formatDate } from '../../utils/format';
@@ -38,7 +38,7 @@ export default function VehicleSalesListPage() {
     } catch { toast({ title: 'Delete failed', variant: 'error' }); }
   };
 
-  const cols = ['Sr No', 'Invoice No.', 'Date', 'Customer', 'Mobile', 'Vehicles', 'Net Payable', 'Advance Paid', 'Balance Amount', 'Status', 'Action'];
+  const cols = ['Sr No', 'Invoice No.', 'Date', 'Customer', 'Vehicles', 'Net Payable', 'Advance Paid', 'Balance Amount', 'Status', 'Action'];
 
   return (
     <div>
@@ -64,7 +64,7 @@ export default function VehicleSalesListPage() {
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
               {cols.map(h => (
-                <th key={h} className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                <th key={h} className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide align-bottom">{h}</th>
               ))}
             </tr>
           </thead>
@@ -84,8 +84,10 @@ export default function VehicleSalesListPage() {
                   </button>
                 </td>
                 <td className="py-3 px-4 text-gray-600 whitespace-nowrap">{formatDate(s.saleDate)}</td>
-                <td className="py-3 px-4 text-gray-700">{s.customer?.name || '-'}</td>
-                <td className="py-3 px-4 text-gray-500">{s.customer?.mobile || '-'}</td>
+                <td className="py-3 px-4">
+                  <div className="text-gray-700 font-medium">{s.customer?.name || '-'}</div>
+                  <div className="text-xs text-gray-400">{s.customer?.mobile || '-'}</div>
+                </td>
                 <td className="py-3 px-4 text-gray-500">{s.vehicles?.length || 0}</td>
                 <td className="py-3 px-4 text-gray-800 font-medium whitespace-nowrap">{formatCurrency(s.payment?.netPayable || 0)}</td>
                 <td className="py-3 px-4 text-gray-700 whitespace-nowrap">{formatCurrency(s.payment?.advancePaid || 0)}</td>
@@ -97,6 +99,9 @@ export default function VehicleSalesListPage() {
                 </td>
                 <td className="py-3 px-4" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center gap-1">
+                    <button onClick={() => navigate(`/vehicle-sale-invoice/${s._id}`)} title="View" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700">
+                      <Eye size={14} />
+                    </button>
                     <button onClick={() => setPayFor(s)} title="Add Payment (Pay Remaining)" className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-500 hover:text-emerald-700">
                       <Wallet size={14} />
                     </button>
