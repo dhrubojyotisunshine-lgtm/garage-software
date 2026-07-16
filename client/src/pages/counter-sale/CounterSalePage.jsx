@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Calendar, Pencil, Trash2, Printer, FileText, IndianRupee, AlertCircle } from 'lucide-react';
 import { counterSalesApi } from '../../api/counterSales';
 import Pagination from '../../components/ui/Pagination';
+import { listItems, listTotal, listPages } from '../../utils/list';
 import { useToast } from '../../components/ui/Toast';
 
 export default function CounterSalePage() {
@@ -33,9 +34,9 @@ export default function CounterSalePage() {
         counterSalesApi.list(params),
         counterSalesApi.stats()
       ]);
-      setSales(listRes.data.items || []);
-      setTotal(listRes.data.total || 0);
-      setPages(listRes.data.pages || 1);
+      setSales(listItems(listRes.data));
+      setTotal(listTotal(listRes.data));
+      setPages(listPages(listRes.data));
       setStats(statsRes.data);
     } catch {
       toast({ title: 'Failed to load counter sales', variant: 'error' });

@@ -4,6 +4,7 @@ import { Search, Plus, Pencil, Trash2 } from 'lucide-react';
 import { vehicleStockApi } from '../../api/vehicleStockApi';
 import { useToast } from '../../components/ui/Toast';
 import Pagination from '../../components/ui/Pagination';
+import { listItems, listTotal, listPages } from '../../utils/list';
 
 export default function VehicleStockList() {
   const navigate = useNavigate();
@@ -20,9 +21,9 @@ export default function VehicleStockList() {
     setLoading(true);
     try {
       const { data } = await vehicleStockApi.list({ page, limit, search: search || undefined });
-      setRows(data.items || []);
-      setTotal(data.total || 0);
-      setPages(data.pages || 1);
+      setRows(listItems(data));
+      setTotal(listTotal(data));
+      setPages(listPages(data));
     } catch { toast({ title: 'Failed to load stock', variant: 'error' }); }
     finally { setLoading(false); }
   }, [page, limit, search]);

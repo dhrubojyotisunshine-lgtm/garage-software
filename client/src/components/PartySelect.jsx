@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
 import { partyApi } from '../api/partyApi';
+import { listItems } from '../utils/list';
 
 const inputCls = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white';
 
@@ -15,7 +16,7 @@ export default function PartySelect({ selectedName, selectedPhone, onSelect }) {
   // Refetch each time the dropdown opens so newly added parties show up.
   useEffect(() => {
     if (!open) return;
-    partyApi.list({ all: 1 }).then(({ data }) => setParties(data.items || [])).catch(() => {});
+    partyApi.list({ all: 1 }).then(({ data }) => setParties(listItems(data))).catch(() => {});
   }, [open]);
 
   useEffect(() => {

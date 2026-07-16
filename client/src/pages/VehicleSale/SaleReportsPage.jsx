@@ -7,6 +7,7 @@ import { DateField } from '../../components/ui/DateField';
 import { formatCurrency, formatDate } from '../../utils/format';
 import useAuthStore from '../../store/authStore';
 import Pagination from '../../components/ui/Pagination';
+import { listItems } from '../../utils/list';
 
 const selectCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary';
 const labelCls = 'block text-sm font-medium text-gray-600 mb-1';
@@ -61,8 +62,8 @@ export default function SaleReportsPage() {
   const loadData = useCallback(async () => {
     try {
       const [s, st] = await Promise.all([vehicleSaleApi.list({ all: 1 }), vehicleStockApi.list({ all: 1 })]);
-      setSales(Array.isArray(s.data.items) ? s.data.items : []);
-      setStock(Array.isArray(st.data.items) ? st.data.items : []);
+      setSales(listItems(s.data));
+      setStock(listItems(st.data));
     } catch { toast({ title: 'Failed to load report data', variant: 'error' }); }
   }, []);
 

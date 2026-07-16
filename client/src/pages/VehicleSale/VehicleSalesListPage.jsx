@@ -9,6 +9,7 @@ import useAuthStore from '../../store/authStore';
 import PaymentModal from '../../components/VehicleSale/PaymentModal';
 import PaymentHistoryModal from '../../components/VehicleSale/PaymentHistoryModal';
 import Pagination from '../../components/ui/Pagination';
+import { listItems, listTotal, listPages } from '../../utils/list';
 
 export default function VehicleSalesListPage() {
   const navigate = useNavigate();
@@ -28,9 +29,9 @@ export default function VehicleSalesListPage() {
     setLoading(true);
     try {
       const { data } = await vehicleSaleApi.list({ page, limit, search: search || undefined });
-      setSales(data.items || []);
-      setTotal(data.total || 0);
-      setPages(data.pages || 1);
+      setSales(listItems(data));
+      setTotal(listTotal(data));
+      setPages(listPages(data));
     } catch { toast({ title: 'Failed to load sales', variant: 'error' }); }
     finally { setLoading(false); }
   }, [page, limit, search]);

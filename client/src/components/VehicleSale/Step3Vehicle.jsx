@@ -5,6 +5,7 @@ import { SectionCard, Field, inputCls, errorCls } from './parts';
 import { emptyVehicle, num } from '../../pages/VehicleSale/saleUtils';
 import { vehicleStockApi } from '../../api/vehicleStockApi';
 import { formatCurrency } from '../../utils/format';
+import { listItems } from '../../utils/list';
 import useAuthStore from '../../store/authStore';
 
 const cellCls = 'w-full border border-border rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white';
@@ -31,7 +32,7 @@ export default function Step3Vehicle({ form, setForm, setTop, errors }) {
 
   useEffect(() => {
     if (!open) return;
-    vehicleStockApi.list({ all: 1 }).then(({ data }) => setStock(Array.isArray(data.items) ? data.items : [])).catch(() => {});
+    vehicleStockApi.list({ all: 1 }).then(({ data }) => setStock(listItems(data))).catch(() => {});
   }, [open]);
 
   useEffect(() => {

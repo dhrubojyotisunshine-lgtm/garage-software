@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Pencil, Trash2, X } from 'lucide-react';
 import { suppliersApi } from '../../api/suppliers';
 import Pagination from '../../components/ui/Pagination';
+import { listItems, listTotal, listPages } from '../../utils/list';
 import { useToast } from '../../components/ui/Toast';
 
 const inputCls = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white';
@@ -152,9 +153,9 @@ export default function SupplierPage() {
     setLoading(true);
     try {
       const { data } = await suppliersApi.list({ search: search || undefined, page, limit });
-      setSuppliers(data.items || []);
-      setTotal(data.total || 0);
-      setPages(data.pages || 1);
+      setSuppliers(listItems(data));
+      setTotal(listTotal(data));
+      setPages(listPages(data));
     } catch { toast({ title: 'Failed to load suppliers', variant: 'error' }); }
     finally { setLoading(false); }
   }, [search, page, limit]);

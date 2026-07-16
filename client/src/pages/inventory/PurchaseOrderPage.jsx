@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Trash2, ChevronDown, FileText, Wallet, IndianRupee, Download } from 'lucide-react';
 import { purchaseOrdersApi } from '../../api/purchaseOrders';
 import Pagination from '../../components/ui/Pagination';
+import { listItems, listTotal, listPages } from '../../utils/list';
 import { useToast } from '../../components/ui/Toast';
 import { formatDate } from '../../utils/format';
 
@@ -54,9 +55,9 @@ export default function PurchaseOrderPage() {
         reportType: reportType || undefined,
         page, limit
       });
-      setOrders(data.items || []);
-      setTotal(data.total || 0);
-      setPages(data.pages || 1);
+      setOrders(listItems(data));
+      setTotal(listTotal(data));
+      setPages(listPages(data));
     } catch { toast({ title: 'Failed to load', variant: 'error' }); }
     finally { setLoading(false); }
   }, [search, reportType, page, limit]);
@@ -78,7 +79,7 @@ export default function PurchaseOrderPage() {
         reportType: reportType || undefined,
         all: 1
       });
-      all = data.items || [];
+      all = listItems(data);
     } catch { /* fall back to current page */ }
     if (!all.length) return toast({ title: 'Nothing to export', variant: 'error' });
     const cols = ['Order Date', 'Order No.', 'Supplier Name', 'Contact Details', 'Received Date', 'Paid Amount', 'Pending Amount', 'Status'];

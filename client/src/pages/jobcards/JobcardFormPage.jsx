@@ -1612,7 +1612,7 @@ function DentMarksDrawer({ marks, onChange }) {
               const count = marks.filter(m => m.type === type).length;
               if (!count) return null;
               return (
-                <span key={type} style={{ backgroundColor: color + '20', color }} className="text-xs font-medium px-2 py-0.5 rounded-full border" style={{ borderColor: color + '40', backgroundColor: color + '15', color }}>
+                <span key={type} className="text-xs font-medium px-2 py-0.5 rounded-full border" style={{ borderColor: color + '40', backgroundColor: color + '15', color }}>
                   {count} {type}
                 </span>
               );

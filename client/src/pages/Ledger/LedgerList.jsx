@@ -6,6 +6,7 @@ import { useToast } from '../../components/ui/Toast';
 import { formatCurrency } from '../../utils/format';
 import PartyModal from '../../components/PartyModal';
 import Pagination from '../../components/ui/Pagination';
+import { listItems, listTotal, listPages } from '../../utils/list';
 
 const COLUMNS = ['Sr No', 'Party Name', 'Phone', 'Total Debit', 'Total Credit', 'Balance', 'Action'];
 
@@ -25,9 +26,9 @@ export default function LedgerList() {
     setLoading(true);
     try {
       const { data } = await partyApi.list({ page, limit, search: search || undefined });
-      setRows(data.items || []);
-      setTotal(data.total || 0);
-      setPages(data.pages || 1);
+      setRows(listItems(data));
+      setTotal(listTotal(data));
+      setPages(listPages(data));
     } catch { toast({ title: 'Failed to load parties', variant: 'error' }); }
     finally { setLoading(false); }
   }, [page, limit, search]);
