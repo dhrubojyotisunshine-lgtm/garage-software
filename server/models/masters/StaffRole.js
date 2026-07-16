@@ -21,6 +21,9 @@ const staffRoleSchema = new mongoose.Schema({
     canEditVehicle:   { type: Boolean, default: false },
     canDeleteVehicle: { type: Boolean, default: false },
   },
+  reportPermissions: {
+    canViewProfit: { type: Boolean, default: false },
+  },
   isDefault: { type: Boolean, default: false },
   active:    { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now }

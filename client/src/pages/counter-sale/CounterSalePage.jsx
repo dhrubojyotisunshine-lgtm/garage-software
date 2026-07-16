@@ -3,6 +3,7 @@ import { DateField } from '../../components/ui/DateField';
 import { useNavigate } from 'react-router-dom';
 import { Search, Calendar, Pencil, Trash2, Printer, FileText, IndianRupee, AlertCircle } from 'lucide-react';
 import { counterSalesApi } from '../../api/counterSales';
+import Pagination from '../../components/ui/Pagination';
 import { useToast } from '../../components/ui/Toast';
 
 export default function CounterSalePage() {
@@ -16,11 +17,15 @@ export default function CounterSalePage() {
   const [endDate, setEnd]       = useState('');
   const [loading, setLoading]   = useState(false);
   const [deletingId, setDel]    = useState(null);
+  const [page, setPage]         = useState(1);
+  const [limit, setLimit]       = useState(20);
+  const [total, setTotal]       = useState(0);
+  const [pages, setPages]       = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = { page, limit };
       if (search.trim()) params.search    = search.trim();
       if (startDate)      params.startDate = startDate;
       if (endDate)        params.endDate   = endDate;
@@ -28,14 +33,17 @@ export default function CounterSalePage() {
         counterSalesApi.list(params),
         counterSalesApi.stats()
       ]);
-      setSales(listRes.data);
+      setSales(listRes.data.items || []);
+      setTotal(listRes.data.total || 0);
+      setPages(listRes.data.pages || 1);
       setStats(statsRes.data);
     } catch {
       toast({ title: 'Failed to load counter sales', variant: 'error' });
     } finally { setLoading(false); }
-  }, [search, startDate, endDate]);
+  }, [search, startDate, endDate, page, limit]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setPage(1); }, [search, startDate, endDate, limit]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this counter sale?')) return;
@@ -118,6 +126,7 @@ export default function CounterSalePage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
+              <th className="text-left py-3 px-5 font-semibold text-gray-700">Sr No</th>
               <th className="text-left py-3 px-5 font-semibold text-gray-700">Counter Number</th>
               <th className="text-left py-3 px-5 font-semibold text-gray-700">Customer Name</th>
               <th className="text-left py-3 px-5 font-semibold text-gray-700">Mobile Number</th>
@@ -128,11 +137,12 @@ export default function CounterSalePage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-12 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading…</td></tr>
             ) : sales.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-12 text-gray-400">No counter sales found</td></tr>
-            ) : sales.map(s => (
+              <tr><td colSpan={7} className="text-center py-12 text-gray-400">No counter sales found</td></tr>
+            ) : sales.map((s, idx) => (
               <tr key={s._id} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-3 px-5 text-gray-500">{(page - 1) * limit + idx + 1}</td>
                 <td className="py-3 px-5 text-gray-700">{s.counterNumber}</td>
                 <td className="py-3 px-5 text-gray-700">{s.customerName}</td>
                 <td className="py-3 px-5 text-gray-600">{s.customerMobile}</td>
@@ -161,6 +171,8 @@ export default function CounterSalePage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} pages={pages} total={total} limit={limit} onPage={setPage} onLimit={setLimit} />
     </div>
   );
 }

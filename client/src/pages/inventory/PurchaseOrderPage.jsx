@@ -3,6 +3,7 @@ import { DateField } from '../../components/ui/DateField';
 import { useNavigate } from 'react-router-dom';
 import { Search, Trash2, ChevronDown, FileText, Wallet, IndianRupee, Download } from 'lucide-react';
 import { purchaseOrdersApi } from '../../api/purchaseOrders';
+import Pagination from '../../components/ui/Pagination';
 import { useToast } from '../../components/ui/Toast';
 import { formatDate } from '../../utils/format';
 
@@ -36,6 +37,10 @@ export default function PurchaseOrderPage() {
   const [search, setSearch]       = useState('');
   const [dateRange, setDateRange] = useState('');
   const [reportType, setReportType] = useState('');
+  const [page, setPage]           = useState(1);
+  const [limit, setLimit]         = useState(20);
+  const [total, setTotal]         = useState(0);
+  const [pages, setPages]         = useState(1);
 
   const loadStats = async () => {
     try { const { data } = await purchaseOrdersApi.stats(); setStats(data); } catch {}
@@ -46,23 +51,36 @@ export default function PurchaseOrderPage() {
     try {
       const { data } = await purchaseOrdersApi.list({
         search: search || undefined,
-        reportType: reportType || undefined
+        reportType: reportType || undefined,
+        page, limit
       });
-      setOrders(data);
+      setOrders(data.items || []);
+      setTotal(data.total || 0);
+      setPages(data.pages || 1);
     } catch { toast({ title: 'Failed to load', variant: 'error' }); }
     finally { setLoading(false); }
-  }, [search, reportType]);
+  }, [search, reportType, page, limit]);
 
   useEffect(() => { loadStats(); }, []);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setPage(1); }, [search, reportType, limit]);
 
   const csvCell = (v) => {
     if (v == null) return '';
     const s = String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const exportCSV = () => {
-    if (!orders.length) return toast({ title: 'Nothing to export', variant: 'error' });
+  const exportCSV = async () => {
+    let all = orders;
+    try {
+      const { data } = await purchaseOrdersApi.list({
+        search: search || undefined,
+        reportType: reportType || undefined,
+        all: 1
+      });
+      all = data.items || [];
+    } catch { /* fall back to current page */ }
+    if (!all.length) return toast({ title: 'Nothing to export', variant: 'error' });
     const cols = ['Order Date', 'Order No.', 'Supplier Name', 'Contact Details', 'Received Date', 'Paid Amount', 'Pending Amount', 'Status'];
     const rowOf = (po) => [
       formatDate(po.createdAt),
@@ -74,7 +92,7 @@ export default function PurchaseOrderPage() {
       po.pendingAmount || 0,
       po.status || '',
     ];
-    const lines = [cols.join(','), ...orders.map(po => rowOf(po).map(csvCell).join(','))];
+    const lines = [cols.join(','), ...all.map(po => rowOf(po).map(csvCell).join(','))];
     const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -150,18 +168,19 @@ export default function PurchaseOrderPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
-              {['Order Date', 'Order No.', 'Supplier Name', 'Contact Details', 'Received Date', 'Paid Amount', 'Pending Amount', 'Status', 'Action'].map(h => (
+              {['Sr No', 'Order Date', 'Order No.', 'Supplier Name', 'Contact Details', 'Received Date', 'Paid Amount', 'Pending Amount', 'Status', 'Action'].map(h => (
                 <th key={h} className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} className="text-center py-12 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={10} className="text-center py-12 text-gray-400">Loading…</td></tr>
             ) : orders.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-12 text-gray-400">No purchase orders found</td></tr>
-            ) : orders.map(po => (
+              <tr><td colSpan={10} className="text-center py-12 text-gray-400">No purchase orders found</td></tr>
+            ) : orders.map((po, idx) => (
               <tr key={po._id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                <td className="py-3 px-4 text-gray-500 text-xs">{(page - 1) * limit + idx + 1}</td>
                 <td className="py-3 px-4 text-gray-600 text-xs">{formatDate(po.createdAt)}</td>
                 <td className="py-3 px-4">
                   <button onClick={() => navigate(`/inventory/purchase-order/${po._id}`)}
@@ -189,6 +208,8 @@ export default function PurchaseOrderPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} pages={pages} total={total} limit={limit} onPage={setPage} onLimit={setLimit} />
     </div>
   );
 }

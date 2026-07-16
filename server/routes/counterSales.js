@@ -5,6 +5,7 @@ const CounterSale = require('../models/CounterSale');
 const SparePart  = require('../models/masters/SparePart');
 const Lube       = require('../models/masters/Lube');
 const { protect } = require('../middleware/auth');
+const { checkStock } = require('../utils/stockCheck');
 
 router.use(protect);
 
@@ -38,7 +39,9 @@ router.get('/stats', async (req, res) => {
 /* ── List ── */
 router.get('/', async (req, res) => {
   try {
-    const { search, startDate, endDate } = req.query;
+    const { search, startDate, endDate, all } = req.query;
+    const page  = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 20);
     const q = { garageId: req.garage._id, active: { $ne: false } };
     if (search) q.$or = [
       { customerName:   { $regex: search, $options: 'i' } },
@@ -50,8 +53,16 @@ router.get('/', async (req, res) => {
       if (startDate) q.createdAt.$gte = new Date(startDate);
       if (endDate)   q.createdAt.$lte = new Date(endDate + 'T23:59:59');
     }
-    const sales = await CounterSale.find(q).sort({ createdAt: -1 });
-    res.json(sales);
+    const total = await CounterSale.countDocuments(q);
+    let query = CounterSale.find(q).sort({ createdAt: -1 });
+    if (!all) query = query.skip((page - 1) * limit).limit(limit);
+    const items = await query;
+    res.json({
+      items, total,
+      page:  all ? 1 : page,
+      pages: all ? 1 : Math.max(1, Math.ceil(total / limit)),
+      limit: all ? total : limit
+    });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
@@ -210,6 +221,11 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const data = { ...sanitizeSale(req.body), garageId: req.garage._id };
+
+    // Block if it would drive stock negative (unless Negative Inventory is enabled).
+    const stockCheck = await checkStock(req.garage, (data.items || []).map(i => ({ itemType: i.itemType, itemId: i.itemId, qty: i.qty })));
+    if (!stockCheck.ok) return res.status(400).json({ message: stockCheck.message });
+
     const sale = new CounterSale(data);
     await sale.save();
 
@@ -227,12 +243,35 @@ router.post('/', async (req, res) => {
 /* ── Update ── */
 router.put('/:id', async (req, res) => {
   try {
+    const existing = await CounterSale.findOne({ _id: req.params.id, garageId: req.garage._id });
+    if (!existing) return res.status(404).json({ message: 'Not found' });
+
+    const newData = sanitizeSale(req.body);
+
+    // Net stock impact = new items (deduct) minus old items (restore). Block if it
+    // would go negative, unless Negative Inventory is enabled.
+    const stockCheck = await checkStock(req.garage, [
+      ...(newData.items || []).map(i => ({ itemType: i.itemType, itemId: i.itemId, qty: i.qty })),
+      ...(existing.items || []).map(i => ({ itemType: i.itemType, itemId: i.itemId, qty: -(i.qty || 0) })),
+    ]);
+    if (!stockCheck.ok) return res.status(400).json({ message: stockCheck.message });
+
+    // Restore old stock, apply the update, then deduct the new stock.
+    for (const item of existing.items || []) {
+      if (!item.itemId) continue;
+      const Model = item.itemType === 'Lube' ? Lube : SparePart;
+      await Model.findByIdAndUpdate(item.itemId, { $inc: { currentStock: (item.qty || 0) } });
+    }
     const sale = await CounterSale.findOneAndUpdate(
       { _id: req.params.id, garageId: req.garage._id },
-      sanitizeSale(req.body),
+      newData,
       { new: true, runValidators: true }
     );
-    if (!sale) return res.status(404).json({ message: 'Not found' });
+    for (const item of sale.items || []) {
+      if (!item.itemId) continue;
+      const Model = item.itemType === 'Lube' ? Lube : SparePart;
+      await Model.findByIdAndUpdate(item.itemId, { $inc: { currentStock: -(item.qty || 0) } });
+    }
     res.json(sale);
   } catch (err) { res.status(500).json({ message: err.message }); }
 });

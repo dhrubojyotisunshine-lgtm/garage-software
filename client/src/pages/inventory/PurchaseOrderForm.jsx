@@ -74,8 +74,8 @@ export default function PurchaseOrderForm({ isAddStock = false }) {
 
   /* ── Load suppliers ── */
   useEffect(() => {
-    suppliersApi.list({ search: supplierSearch || undefined })
-      .then(({ data }) => setSuppliers(data)).catch(() => {});
+    suppliersApi.list({ search: supplierSearch || undefined, all: 1 })
+      .then(({ data }) => setSuppliers(data.items || [])).catch(() => {});
   }, [supplierSearch]);
 
   /* ── Item search ── */

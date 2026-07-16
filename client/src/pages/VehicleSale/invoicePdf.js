@@ -6,8 +6,9 @@ const money = (n) => 'Rs. ' + (Number(n) || 0).toLocaleString('en-IN', { maximum
 const fdate = (d) => (d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-');
 
 // Generate and download a full Vehicle Sale invoice as a real .pdf.
-export function downloadInvoicePdf(sale) {
+export function downloadInvoicePdf(sale, fallbackGstin = '') {
   if (!sale) return;
+  const gstin = sale.dealer?.gstin || fallbackGstin;
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const pw = doc.internal.pageSize.getWidth();
   const M = 40;
@@ -22,17 +23,15 @@ export function downloadInvoicePdf(sale) {
   let y = 62;
   const dealerLines = [
     sale.dealer?.address, sale.dealer?.phone && `Phone: ${sale.dealer.phone}`,
-    sale.dealer?.email, sale.dealer?.gstin && `GSTIN: ${sale.dealer.gstin}`
+    sale.dealer?.email, gstin && `GSTIN: ${gstin}`
   ].filter(Boolean);
   dealerLines.forEach(l => { doc.text(String(l), M, y); y += 12; });
 
   doc.setTextColor(30);
   doc.text(`Invoice No: ${sale.invoiceNo || '-'}`, pw - M, 62, { align: 'right' });
   doc.text(`Date: ${fdate(sale.saleDate)}`, pw - M, 74, { align: 'right' });
-  doc.text(`Sale Type: ${sale.saleType || '-'}`, pw - M, 86, { align: 'right' });
-  if (sale.salesExecutive) doc.text(`Executive: ${sale.salesExecutive}`, pw - M, 98, { align: 'right' });
 
-  y = Math.max(y, 104) + 6;
+  y = Math.max(y, 86) + 6;
 
   // ── Bill To ──
   doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(30);
@@ -56,21 +55,28 @@ export function downloadInvoicePdf(sale) {
       i + 1, v.vehicleModel || '-', v.variant || '-', v.color || '-',
       v.chassisNumber || '-', v.engineNumber || '-', money(v.price)
     ]),
-    styles: { fontSize: 8.5, cellPadding: 4 },
-    headStyles: { fillColor: [243, 244, 246], textColor: 80, fontStyle: 'bold' },
-    columnStyles: { 6: { halign: 'right' } }
+    styles: { fontSize: 8.5, cellPadding: 4, halign: 'center' },
+    headStyles: { fillColor: [243, 244, 246], textColor: 80, fontStyle: 'bold', halign: 'center' }
   });
 
   // ── Amount summary (right half) ──
   const rows = [
     ['Showroom Price', money(sale.payment?.showroomPrice ?? sale.payment?.grossAmount)],
-    ['Total Discount', money(sale.payment?.totalDiscount)],
+    ['Finance Amount', money(sale.payment?.totalDiscount)],
     ['Net Payable', money(sale.payment?.netPayable)],
-    ['Advance Paid', money(sale.payment?.advancePaid)],
+    ['Advance/Full Payment/DP Payment', money(sale.payment?.advancePaid)],
     ['Balance Amount', money(sale.payment?.balanceAmount)]
   ];
+  const summaryStartY = doc.lastAutoTable.finalY + 16;
+
+  // Sale meta in the empty left half, beside the payment summary.
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(60);
+  let metaY = summaryStartY + 14;
+  doc.text(`Type: ${sale.saleType || '-'}`, M, metaY); metaY += 14;
+  if (sale.salesExecutive) doc.text(`Financer: ${sale.salesExecutive}`, M, metaY);
+
   autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 16,
+    startY: summaryStartY,
     margin: { left: pw / 2, right: M },
     head: [['Description', 'Amount']],
     body: rows,
@@ -102,16 +108,16 @@ export function downloadInvoicePdf(sale) {
     `Payment Date: ${fdate(pay.paymentDate)}`
   ].forEach(l => { doc.text(String(l), M, fy, { maxWidth: pw - 2 * M }); fy += 12; });
 
-  const wrap = (label, text) => {
+  // Narration & remark: print the values only (labels intentionally omitted).
+  const wrapValue = (text) => {
     fy += 4;
-    doc.setFont('helvetica', 'bold'); doc.text(label, M, fy);
     doc.setFont('helvetica', 'normal');
     const lines = doc.splitTextToSize(String(text), pw - 2 * M);
-    lines.forEach((ln, i) => doc.text(ln, M, fy + 12 + i * 12));
-    fy += 12 + lines.length * 12;
+    lines.forEach((ln, i) => doc.text(ln, M, fy + i * 12));
+    fy += lines.length * 12;
   };
-  if (sale.narration) wrap('Narration', sale.narration);
-  if (sale.remark) wrap('Remark', sale.remark);
+  if (sale.narration) wrapValue(sale.narration);
+  if (sale.remark) wrapValue(sale.remark);
 
   doc.save(`invoice-${sale.invoiceNo || 'sale'}-${new Date().toISOString().slice(0, 10)}.pdf`);
 }

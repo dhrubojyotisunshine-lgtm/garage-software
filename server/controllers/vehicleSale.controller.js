@@ -1,10 +1,13 @@
 const VehicleSale = require('../models/vehicleSale.model');
 const { validateVehicleSale } = require('../validation/vehicleSale.validation');
 
-// GET /api/vehicle-sales  — list (optional ?search= on invoice / customer / booking)
+// GET /api/vehicle-sales  — paginated list (?page= &limit= &search=). ?all=1 returns
+// everything (used by reports). Always returns { items, total, page, pages, limit }.
 exports.list = async (req, res) => {
   try {
-    const { search } = req.query;
+    const { search, all } = req.query;
+    const page  = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 20);
     const q = { garageId: req.garage._id, active: { $ne: false } };
     if (search) {
       q.$or = [
@@ -14,8 +17,16 @@ exports.list = async (req, res) => {
         { 'customer.mobile': { $regex: search, $options: 'i' } }
       ];
     }
-    const sales = await VehicleSale.find(q).sort({ saleDate: -1, createdAt: -1 });
-    res.json(sales);
+    const total = await VehicleSale.countDocuments(q);
+    let query = VehicleSale.find(q).sort({ saleDate: -1, createdAt: -1 });
+    if (!all) query = query.skip((page - 1) * limit).limit(limit);
+    const items = await query;
+    res.json({
+      items, total,
+      page:  all ? 1 : page,
+      pages: all ? 1 : Math.max(1, Math.ceil(total / limit)),
+      limit: all ? total : limit
+    });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 

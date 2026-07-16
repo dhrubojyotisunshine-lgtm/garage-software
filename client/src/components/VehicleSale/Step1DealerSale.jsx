@@ -43,8 +43,8 @@ export default function Step1DealerSale({ form, setTop, setNested, errors }) {
               <option value="Exchange">Exchange</option>
             </select>
           </Field>
-          <Field label="Enter Executive">
-            <input className={inputCls} value={form.salesExecutive} onChange={e => setTop('salesExecutive', e.target.value)} placeholder="Enter Executive" />
+          <Field label="Enter Financer">
+            <input className={inputCls} value={form.salesExecutive} onChange={e => setTop('salesExecutive', e.target.value)} placeholder="Enter Financer" />
           </Field>
         </div>
       </SectionCard>

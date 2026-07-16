@@ -36,7 +36,7 @@ const th = (extra = {}) => ({ border: `1px solid ${BORDER}`, padding: '6px 8px',
 
 export default function TaxInvoiceDoc({
   garage, title, number, billTo, vehicleRows = [], metaLabel, metaRows = [],
-  items = [], customerVoice = [], summary = {}, footerNote, paymentStatus, reminder,
+  items = [], customerVoice = [], advice = [], summary = {}, footerNote, paymentStatus, reminder,
 }) {
   const logo = garage?.branding?.logoUrl || garage?.logoUrl || null;
   const garageAddress = [garage?.address, garage?.city, garage?.state, garage?.zipcode].filter(Boolean).join(', ');
@@ -204,6 +204,16 @@ export default function TaxInvoiceDoc({
             <tr>
               <td style={td({ minHeight: 26 })} colSpan={2}>{(customerVoice || []).join(' · ') || ''}</td>
             </tr>
+            {advice && advice.length > 0 && (
+              <>
+                <tr>
+                  <th style={th()} colSpan={2}>Advice</th>
+                </tr>
+                <tr>
+                  <td style={td({ minHeight: 26 })} colSpan={2}>{advice.join(' · ')}</td>
+                </tr>
+              </>
+            )}
           </tbody>
         </table>
 

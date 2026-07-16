@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer, Download } from 'lucide-react';
 import { vehicleSaleApi } from '../../api/vehicleSaleApi';
+import useAuthStore from '../../store/authStore';
 import { useToast } from '../../components/ui/Toast';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { downloadInvoicePdf } from './invoicePdf';
@@ -19,6 +20,7 @@ export default function VehicleSaleInvoice() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { garage } = useAuthStore();
   const [sale, setSale] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,6 +35,7 @@ export default function VehicleSaleInvoice() {
   if (!sale) return <div className="py-16 text-center text-gray-400">Invoice not found.</div>;
 
   const d = sale.dealer || {}, c = sale.customer || {}, p = sale.payment || {};
+  const gstin = d.gstin || garage?.gstNo || '';
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -42,7 +45,7 @@ export default function VehicleSaleInvoice() {
           <ArrowLeft size={16} /> Back
         </button>
         <div className="flex items-center gap-3">
-          <button onClick={() => downloadInvoicePdf(sale)}
+          <button onClick={() => downloadInvoicePdf(sale, garage?.gstNo)}
             className="inline-flex items-center gap-1.5 px-3 py-2 border border-green-300 rounded-lg text-sm font-medium text-green-700 hover:bg-green-50 bg-white">
             <Download size={14} /> Download PDF
           </button>
@@ -61,15 +64,13 @@ export default function VehicleSaleInvoice() {
             <h1 className="font-heading font-bold text-gray-800 text-xl">{d.name || 'Vehicle Sale'}</h1>
             <div className="text-xs text-gray-500 mt-1 whitespace-pre-line">{d.address}</div>
             <div className="text-xs text-gray-500 mt-0.5">
-              {d.phone && <span>Phone: {d.phone} </span>}{d.email && <span>· {d.email} </span>}{d.gstin && <span>· GSTIN: {d.gstin}</span>}
+              {d.phone && <span>Phone: {d.phone} </span>}{d.email && <span>· {d.email} </span>}{gstin && <span>· GSTIN: {gstin}</span>}
             </div>
           </div>
           <div className="text-right">
             <div className="font-heading font-bold text-gray-700 text-lg">TAX INVOICE</div>
             <div className="text-sm text-gray-600 mt-1">Invoice: <b>{sale.invoiceNo}</b></div>
             <div className="text-sm text-gray-600">Date: {formatDate(sale.saleDate)}</div>
-            <div className="text-sm text-gray-600">Type: {sale.saleType}</div>
-            {sale.salesExecutive && <div className="text-sm text-gray-600">Executive: {sale.salesExecutive}</div>}
           </div>
         </div>
 
@@ -88,29 +89,34 @@ export default function VehicleSaleInvoice() {
           <table className="w-full text-sm border border-gray-200">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                {['#', 'Vehicle Model', 'Variant', 'Color', 'Chassis No.', 'Engine No.', 'Price'].map((h, i) => (
-                  <th key={h} className={`py-2 px-3 text-xs font-semibold text-gray-500 ${i === 6 ? 'text-right' : 'text-left'}`}>{h}</th>
+                {['#', 'Vehicle Model', 'Variant', 'Color', 'Chassis No.', 'Engine No.', 'Price'].map((h) => (
+                  <th key={h} className="py-2 px-3 text-xs font-semibold text-gray-500 text-center">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {(sale.vehicles || []).map((v, i) => (
-                <tr key={i} className="border-b border-gray-100 last:border-0">
+                <tr key={i} className="border-b border-gray-100 last:border-0 text-center">
                   <td className="py-2 px-3 text-gray-500">{i + 1}</td>
                   <td className="py-2 px-3 text-gray-800 font-medium">{v.vehicleModel || '-'}</td>
                   <td className="py-2 px-3 text-gray-600">{v.variant || '-'}</td>
                   <td className="py-2 px-3 text-gray-600">{v.color || '-'}</td>
                   <td className="py-2 px-3 text-gray-600 text-xs">{v.chassisNumber || '-'}</td>
                   <td className="py-2 px-3 text-gray-600 text-xs">{v.engineNumber || '-'}</td>
-                  <td className="py-2 px-3 text-right text-gray-800">{formatCurrency(v.price)}</td>
+                  <td className="py-2 px-3 text-gray-800">{formatCurrency(v.price)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-        {/* Payment summary */}
-        <div className="sm:max-w-sm sm:ml-auto">
+        {/* Payment section: sale meta on the left, summary table on the right */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="text-sm text-gray-600 space-y-1">
+            <div>Type: {sale.saleType}</div>
+            {sale.salesExecutive && <div>Financer: {sale.salesExecutive}</div>}
+          </div>
+          <div className="w-full sm:max-w-sm">
           <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Payment Summary</div>
           <table className="w-full text-sm border border-gray-200">
             <thead>
@@ -122,9 +128,9 @@ export default function VehicleSaleInvoice() {
             <tbody>
               {[
                 ['Showroom Price', p.showroomPrice ?? p.grossAmount, true],
-                ['Total Discount', p.totalDiscount],
+                ['Finance Amount', p.totalDiscount],
                 ['Net Payable', p.netPayable, true],
-                ['Advance Paid', p.advancePaid],
+                ['Advance/Full Payment/DP Payment', p.advancePaid],
                 ['Balance Amount', p.balanceAmount, true],
               ].map(([label, val, strong]) => (
                 <tr key={label} className={`border-b border-gray-100 last:border-0 ${strong ? 'bg-gray-50' : ''}`}>
@@ -134,13 +140,14 @@ export default function VehicleSaleInvoice() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Payment meta + narration */}
         <div className="mt-5 pt-4 border-t border-gray-200 text-sm text-gray-600 space-y-1">
           <div>Payment Status: <b>{p.paymentStatus || '-'}</b> · Mode: {p.paymentMode || '-'} · Ref: {p.transactionId || '-'}{p.paymentDate ? ` · ${formatDate(p.paymentDate)}` : ''}</div>
-          {sale.narration && <div>Narration: {sale.narration}</div>}
-          {sale.remark && <div>Remark: {sale.remark}</div>}
+          {sale.narration && <div>{sale.narration}</div>}
+          {sale.remark && <div>{sale.remark}</div>}
         </div>
       </div>
     </div>

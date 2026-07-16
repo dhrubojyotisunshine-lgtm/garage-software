@@ -28,12 +28,12 @@ export default function Step7Payment({ form, setNested, errors }) {
       <SectionCard title="Payment Summary" icon={Wallet}>
         <SummaryRow label="Showroom Price" value={formatCurrency(d.showroomPrice)} />
         <div className="flex items-center justify-between py-2 border-b border-gray-100">
-          <span className="text-sm text-gray-500">Total Discount</span>
+          <span className="text-sm text-gray-500">Finance Amount</span>
           <input type="number" className={`${inputCls} max-w-[160px] text-right`} value={p.totalDiscount} onChange={e => setNested('payment', 'totalDiscount', e.target.value)} />
         </div>
         <SummaryRow label="Net Payable" value={formatCurrency(d.netPayable)} strong />
         <div className="flex items-center justify-between py-2 border-b border-gray-100">
-          <span className="text-sm text-gray-500">Advance Paid</span>
+          <span className="text-sm text-gray-500">Advance/Full Payment/DP Payment</span>
           <input type="number" className={`${inputCls} max-w-[160px] text-right`} value={p.advancePaid} onChange={e => setNested('payment', 'advancePaid', e.target.value)} />
         </div>
         <SummaryRow label="Total Paid" value={formatCurrency(d.totalPaid)} strong />

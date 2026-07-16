@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Pencil, Trash2, X } from 'lucide-react';
 import { suppliersApi } from '../../api/suppliers';
+import Pagination from '../../components/ui/Pagination';
 import { useToast } from '../../components/ui/Toast';
 
 const inputCls = 'w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white';
@@ -141,18 +142,25 @@ export default function SupplierPage() {
   const [loading, setLoading]     = useState(false);
   const [search, setSearch]       = useState('');
   const [modal, setModal]         = useState(null); // null | { item? }
+  const [page, setPage]           = useState(1);
+  const [limit, setLimit]         = useState(20);
+  const [total, setTotal]         = useState(0);
+  const [pages, setPages]         = useState(1);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await suppliersApi.list({ search: search || undefined });
-      setSuppliers(data);
+      const { data } = await suppliersApi.list({ search: search || undefined, page, limit });
+      setSuppliers(data.items || []);
+      setTotal(data.total || 0);
+      setPages(data.pages || 1);
     } catch { toast({ title: 'Failed to load suppliers', variant: 'error' }); }
     finally { setLoading(false); }
-  }, [search]);
+  }, [search, page, limit]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setPage(1); }, [search, limit]);
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this supplier?')) return;
@@ -202,7 +210,7 @@ export default function SupplierPage() {
             ) : suppliers.map((s, idx) => (
               <tr key={s._id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 cursor-pointer"
                 onClick={() => navigate(`/inventory/supplier/${s._id}`)}>
-                <td className="py-3 px-4 text-gray-500">{idx + 1}</td>
+                <td className="py-3 px-4 text-gray-500">{(page - 1) * limit + idx + 1}</td>
                 <td className="py-3 px-4 font-medium text-gray-800 hover:text-primary underline underline-offset-2">{s.firmName}</td>
                 <td className="py-3 px-4 text-gray-700">{s.firstName}</td>
                 <td className="py-3 px-4 text-gray-700">{s.contact1}{s.contact2 ? `, ${s.contact2}` : ''}</td>
@@ -224,6 +232,8 @@ export default function SupplierPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} pages={pages} total={total} limit={limit} onPage={setPage} onLimit={setLimit} />
 
       {modal && (
         <SupplierModal

@@ -6,6 +6,7 @@ const PurchaseOrder = require('../models/PurchaseOrder');
 const Customer    = require('../models/Customer');
 const SparePart   = require('../models/masters/SparePart');
 const Lube        = require('../models/masters/Lube');
+const InventoryImportLog = require('../models/InventoryImportLog');
 const { protect } = require('../middleware/auth');
 
 router.use(protect);
@@ -21,9 +22,37 @@ router.get('/', async (req, res) => {
   const gid = req.garage._id;
   if (!startDate || !endDate) return res.status(400).json({ message: 'startDate and endDate required' });
 
+  // Profit report is permission-gated for staff (owners always allowed).
+  if (type === 'profit' && req.staff && !req.staff.roleId?.reportPermissions?.canViewProfit) {
+    return res.status(403).json({ message: 'You do not have permission to view the Profit report' });
+  }
+
   const dateRange = mkRange(startDate, endDate);
 
   try {
+    /* ── Inventory CSV Import Logs ───────────────────────────── *
+     * Audit of every successful inventory CSV import in the range. */
+    if (type === 'csv-import-logs') {
+      const TYPE_LABEL = { spares: 'Spare', lubes: 'Lube', jobs: 'Job' };
+      const logs = await InventoryImportLog.find({ garageId: gid, createdAt: dateRange })
+        .select('-content').sort({ createdAt: -1 }).lean();
+      const data = logs.map(l => ({
+        _id: l._id,
+        date: l.createdAt,
+        importedByName: l.importedByName || '—',
+        importedByType: l.importedByType || 'Owner',
+        itemType: TYPE_LABEL[l.type] || l.type,
+        fileName: l.fileName || 'import.csv',
+        insertedRows: l.insertedRows || 0,
+        totalRows: l.totalRows || 0,
+      }));
+      const summary = {
+        imports: data.length,
+        rowsInserted: data.reduce((s, d) => s + (d.insertedRows || 0), 0),
+      };
+      return res.json({ data, summary });
+    }
+
     /* ── 1. Jobcard Revenue ─────────────────────────────────── *
      * Per-jobcard records with customer + vehicle details.       *
      * Status filter: All | Open | Completed | Closed (default).  */

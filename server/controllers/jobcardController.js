@@ -3,6 +3,7 @@ const Customer = require('../models/Customer');
 const SparePart = require('../models/masters/SparePart');
 const Lube = require('../models/masters/Lube');
 const { generateJobcardNumber } = require('../utils/jobcardNumber');
+const { checkStock } = require('../utils/stockCheck');
 const path = require('path');
 const PDFDocument = require('pdfkit');
 
@@ -121,6 +122,10 @@ const create = async (req, res) => {
       }
     }
 
+    // Block if it would drive stock negative (unless Negative Inventory is enabled).
+    const stockCheck = await checkStock(req.garage, (body.items || []).map(i => ({ itemType: i.itemType, itemId: i.itemId, qty: i.qty })));
+    if (!stockCheck.ok) return res.status(400).json({ message: stockCheck.message });
+
     const jobcardNumber = await generateJobcardNumber(req.garage._id, req.garage.rtoNo);
     const totals = calcTotals(body.items || [], body.discount, body.discountType);
 
@@ -158,9 +163,18 @@ const update = async (req, res) => {
     const existing = await Jobcard.findOne({ _id: req.params.id, garageId: req.garage._id });
     if (!existing) return res.status(404).json({ message: 'Jobcard not found' });
 
+    const body = sanitizePayload(req.body);
+
+    // Net stock impact = new items (deduct) minus old items (restore). Block if it
+    // would go negative, unless Negative Inventory is enabled.
+    const stockCheck = await checkStock(req.garage, [
+      ...(body.items || []).map(i => ({ itemType: i.itemType, itemId: i.itemId, qty: i.qty })),
+      ...(existing.items || []).map(i => ({ itemType: i.itemType, itemId: i.itemId, qty: -(i.qty || 0) })),
+    ]);
+    if (!stockCheck.ok) return res.status(400).json({ message: stockCheck.message });
+
     await adjustStock(existing.items || [], 'increment');
 
-    const body = sanitizePayload(req.body);
     const totals = calcTotals(body.items || [], body.discount, body.discountType);
     const updated = await Jobcard.findByIdAndUpdate(
       req.params.id,

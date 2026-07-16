@@ -38,9 +38,33 @@ export default function LedgerDetail() {
   const [tab, setTab] = useState('details');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  // Default to the last 30 days (like a bank statement); "All" clears the range.
+  const [dateFrom, setDateFrom] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().slice(0, 10);
+  });
+  const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0, 10));
   const [showAdd, setShowAdd] = useState(false);
+
+  // Quick date-range presets (like a bank statement).
+  const PRESETS = [
+    { label: 'All', days: 0 },
+    { label: '7 Days', days: 7 },
+    { label: '15 Days', days: 15 },
+    { label: '30 Days', days: 30 },
+    { label: '60 Days', days: 60 },
+    { label: '90 Days', days: 90 },
+  ];
+  const isoDay = (d) => d.toISOString().slice(0, 10);
+  const applyPreset = (days) => {
+    if (!days) { setDateFrom(''); setDateTo(''); return; }
+    const from = new Date(); from.setDate(from.getDate() - days);
+    setDateFrom(isoDay(from)); setDateTo(isoDay(new Date()));
+  };
+  const isActivePreset = (days) => {
+    if (!days) return !dateFrom && !dateTo;
+    const from = new Date(); from.setDate(from.getDate() - days);
+    return dateFrom === isoDay(from) && dateTo === isoDay(new Date());
+  };
 
   // Name comes from the response when navigating by partyId; from the URL otherwise.
   const displayName = data?.partyName || (name ? decodeURIComponent(name) : '');
@@ -112,34 +136,54 @@ export default function LedgerDetail() {
       M, 80
     );
 
+    // Colors matching the on-screen statement: debit green, credit purple, negative balance red.
+    const GREEN = [21, 128, 61], PURPLE = [126, 34, 206], RED = [220, 38, 38];
+
     const body = [
-      [{ content: 'Opening Balance', colSpan: 2, styles: { fontStyle: 'bold' } }, '', '', { content: money(data.opening), styles: { halign: 'right', fontStyle: 'bold' } }],
-      ...data.rows.map(r => {
-        const particulars = `${r.credit > 0 ? 'Cr' : 'Dr'}  ${r.type}` +
-          (r.narration ? `\n${r.narration}` : '') + (r.remark ? `\n${r.remark}` : '');
-        return [
-          formatDate(r.date),
-          particulars,
-          r.debit ? money(r.debit) : '',
-          r.credit ? money(r.credit) : '',
-          money(r.balance)
-        ];
-      })
+      [
+        { content: 'Opening Balance', colSpan: 6, styles: { fontStyle: 'bold', halign: 'left', fillColor: [249, 250, 251] } },
+        { content: money(data.opening), styles: { halign: 'center', fontStyle: 'bold', fillColor: [249, 250, 251] } }
+      ],
+      ...data.rows.map(r => [
+        formatDate(r.date),
+        `${r.credit > 0 ? 'Cr' : 'Dr'}  ${r.narration || '-'}`,
+        r.remark || '-',
+        r.type || '',
+        r.debit ? money(r.debit) : '',
+        r.credit ? money(r.credit) : '',
+        money(r.balance)
+      ])
     ];
 
     autoTable(doc, {
       startY: 96,
       margin: { left: M, right: M },
-      head: [['Date', 'Particulars', 'Debit', 'Credit', 'Balance']],
+      head: [['Date', 'Narration', 'Remark', 'Type', 'Debit', 'Credit', 'Balance']],
       body,
       foot: [[
-        { content: 'Closing Balance', colSpan: 2 },
+        { content: 'Closing Balance', colSpan: 4, styles: { halign: 'left' } },
         money(data.totalDebit), money(data.totalCredit), money(data.closing)
       ]],
-      styles: { fontSize: 9, cellPadding: 5, valign: 'top' },
-      headStyles: { fillColor: [243, 244, 246], textColor: 80, fontStyle: 'bold' },
-      footStyles: { fillColor: [243, 244, 246], textColor: 20, fontStyle: 'bold' },
-      columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } }
+      styles: { fontSize: 8.5, cellPadding: 4, valign: 'top', halign: 'center' },
+      headStyles: { fillColor: [243, 244, 246], textColor: 80, fontStyle: 'bold', halign: 'center' },
+      footStyles: { fillColor: [243, 244, 246], textColor: 20, fontStyle: 'bold', halign: 'center' },
+      columnStyles: {
+        0: { cellWidth: 56 },
+        2: { textColor: 120 },
+        3: { textColor: 90 },
+        4: { halign: 'center' },
+        5: { halign: 'center' },
+        6: { halign: 'center' }
+      },
+      didParseCell: (d) => {
+        if (d.section !== 'body') return;
+        if (d.column.index === 4) d.cell.styles.textColor = GREEN;   // Debit
+        if (d.column.index === 5) d.cell.styles.textColor = PURPLE;  // Credit
+        if (d.column.index === 6) {
+          const r = data.rows[d.row.index - 1]; // row 0 is the Opening Balance row
+          if (r && (r.balance || 0) < 0) d.cell.styles.textColor = RED;
+        }
+      }
     });
 
     doc.save(`ledger-${displayName || 'party'}-${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -217,6 +261,19 @@ export default function LedgerDetail() {
       {/* ── Ledger Transactions tab ── */}
       {tab === 'ledger' && (
         <div>
+          {/* Quick range presets */}
+          <div className="flex flex-wrap items-center gap-1.5 mb-3">
+            <span className="text-xs text-gray-400 mr-1">Show:</span>
+            {PRESETS.map(p => (
+              <button key={p.label} type="button" onClick={() => applyPreset(p.days)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  isActivePreset(p.days) ? 'bg-primary text-white border-primary' : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                }`}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+
           {/* Filters + export */}
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <div className="flex flex-wrap items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-2 bg-white">
@@ -244,8 +301,8 @@ export default function LedgerDetail() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  {['Date', 'Narration', 'Remark', 'Type', 'Debit', 'Credit', 'Balance'].map((h, i) => (
-                    <th key={h} className={`py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap ${i >= 4 ? 'text-right' : 'text-left'}`}>{h}</th>
+                  {['Date', 'Narration', 'Remark', 'Type', 'Debit', 'Credit', 'Balance'].map((h) => (
+                    <th key={h} className="py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap text-center">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -254,24 +311,24 @@ export default function LedgerDetail() {
                   <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading…</td></tr>
                 ) : (
                   <>
-                    <tr className="border-b border-gray-100 bg-blue-50/40">
+                    <tr className="border-b border-gray-100">
                       <td className="py-2.5 px-4 text-gray-500 text-xs" colSpan={6}>Opening Balance</td>
-                      <td className="py-2.5 px-4 text-right font-semibold text-gray-700">{formatCurrency(data.opening || 0)}</td>
+                      <td className="py-2.5 px-4 text-center font-semibold text-gray-700">{formatCurrency(data.opening || 0)}</td>
                     </tr>
                     {data.rows.length === 0 ? (
                       <tr><td colSpan={7} className="text-center py-10 text-gray-400">No transactions in this range</td></tr>
                     ) : data.rows.map((r, i) => (
                       <tr key={r._id || i} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                        <td className="py-3 px-4 text-gray-600 text-xs whitespace-nowrap align-top">{formatDate(r.date)}</td>
-                        <td className="py-3 px-4 text-gray-700 align-top">
+                        <td className="py-3 px-4 text-gray-600 text-xs whitespace-nowrap align-top text-center">{formatDate(r.date)}</td>
+                        <td className="py-3 px-4 text-gray-700 align-top text-center">
                           <span className={`mr-1.5 text-xs font-bold ${r.credit > 0 ? 'text-purple-600' : 'text-green-600'}`}>{r.credit > 0 ? 'Cr' : 'Dr'}</span>
                           {r.narration || '-'}
                         </td>
-                        <td className="py-3 px-4 text-gray-500 text-xs align-top">{r.remark || '-'}</td>
-                        <td className="py-3 px-4 text-gray-600 align-top">{r.type}</td>
-                        <td className="py-3 px-4 text-right text-green-700 align-top">{r.debit ? formatCurrency(r.debit) : ''}</td>
-                        <td className="py-3 px-4 text-right text-purple-700 align-top">{r.credit ? formatCurrency(r.credit) : ''}</td>
-                        <td className="py-3 px-4 text-right font-medium text-gray-800 align-top">{formatCurrency(r.balance || 0)}</td>
+                        <td className="py-3 px-4 text-gray-500 text-xs align-top text-center">{r.remark || '-'}</td>
+                        <td className="py-3 px-4 text-gray-600 align-top text-center">{r.type}</td>
+                        <td className="py-3 px-4 text-center text-green-700 align-top">{r.debit ? formatCurrency(r.debit) : ''}</td>
+                        <td className="py-3 px-4 text-center text-purple-700 align-top">{r.credit ? formatCurrency(r.credit) : ''}</td>
+                        <td className="py-3 px-4 text-center font-medium text-gray-800 align-top">{formatCurrency(r.balance || 0)}</td>
                       </tr>
                     ))}
                   </>
@@ -281,9 +338,9 @@ export default function LedgerDetail() {
                 <tfoot>
                   <tr className="border-t-2 border-gray-300 bg-gray-50 font-semibold">
                     <td className="py-3 px-4" colSpan={4}>Closing Balance</td>
-                    <td className="py-3 px-4 text-right text-green-700">{formatCurrency(data.totalDebit || 0)}</td>
-                    <td className="py-3 px-4 text-right text-purple-700">{formatCurrency(data.totalCredit || 0)}</td>
-                    <td className="py-3 px-4 text-right text-gray-900">{formatCurrency(data.closing || 0)}</td>
+                    <td className="py-3 px-4 text-center text-green-700">{formatCurrency(data.totalDebit || 0)}</td>
+                    <td className="py-3 px-4 text-center text-purple-700">{formatCurrency(data.totalCredit || 0)}</td>
+                    <td className="py-3 px-4 text-center text-gray-900">{formatCurrency(data.closing || 0)}</td>
                   </tr>
                 </tfoot>
               )}

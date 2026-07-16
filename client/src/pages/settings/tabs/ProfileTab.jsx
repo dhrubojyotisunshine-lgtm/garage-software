@@ -76,6 +76,7 @@ export default function ProfileTab() {
     city: garage?.city || '',
     address: garage?.address || '',
     state: garage?.state || '',
+    gstNo: garage?.gstNo || '',
     vehicleTypes: garage?.vehicleTypes || [],
     logoUrl: garage?.logoUrl || '',
     signatureUrl: garage?.signatureUrl || '',
@@ -95,6 +96,7 @@ export default function ProfileTab() {
         city: garage.city || '',
         address: garage.address || '',
         state: garage.state || '',
+        gstNo: garage.gstNo || '',
         vehicleTypes: garage.vehicleTypes || [],
         logoUrl: garage.logoUrl || '',
         signatureUrl: garage.signatureUrl || '',
@@ -134,6 +136,7 @@ export default function ProfileTab() {
         city: form.city,
         address: form.address,
         state: form.state,
+        gstNo: form.gstNo,
         vehicleTypes: form.vehicleTypes,
       });
       updateGarage(data.garage);
@@ -223,6 +226,10 @@ export default function ProfileTab() {
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">State</label>
             <input className="input-field" value={form.state} onChange={e => set('state', e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">GST IN</label>
+            <input className="input-field" value={form.gstNo} onChange={e => set('gstNo', e.target.value.toUpperCase())} placeholder="e.g. 27ABCDE1234F1Z5" />
           </div>
           <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>

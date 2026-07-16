@@ -23,7 +23,9 @@ router.get('/stats', async (req, res) => {
 /* ── List ── */
 router.get('/', async (req, res) => {
   try {
-    const { search, startDate, endDate, reportType } = req.query;
+    const { search, startDate, endDate, reportType, all } = req.query;
+    const page  = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 20);
     const q = { garageId: req.garage._id, active: { $ne: false } };
     if (search) q.$or = [
       { supplierName: { $regex: search, $options: 'i' } },
@@ -36,8 +38,16 @@ router.get('/', async (req, res) => {
       if (endDate)   q.createdAt.$lte = new Date(endDate + 'T23:59:59');
     }
     if (reportType && reportType !== 'all') q.status = reportType;
-    const pos = await PurchaseOrder.find(q).sort({ createdAt: -1 });
-    res.json(pos);
+    const total = await PurchaseOrder.countDocuments(q);
+    let query = PurchaseOrder.find(q).sort({ createdAt: -1 });
+    if (!all) query = query.skip((page - 1) * limit).limit(limit);
+    const items = await query;
+    res.json({
+      items, total,
+      page:  all ? 1 : page,
+      pages: all ? 1 : Math.max(1, Math.ceil(total / limit)),
+      limit: all ? total : limit
+    });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

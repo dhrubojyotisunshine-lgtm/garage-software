@@ -31,7 +31,7 @@ export default function Step3Vehicle({ form, setForm, setTop, errors }) {
 
   useEffect(() => {
     if (!open) return;
-    vehicleStockApi.list().then(({ data }) => setStock(Array.isArray(data) ? data : [])).catch(() => {});
+    vehicleStockApi.list({ all: 1 }).then(({ data }) => setStock(Array.isArray(data.items) ? data.items : [])).catch(() => {});
   }, [open]);
 
   useEffect(() => {
@@ -50,7 +50,10 @@ export default function Step3Vehicle({ form, setForm, setTop, errors }) {
   });
 
   const pickStock = (s) => {
+    // Guard: no remaining stock, or this exact vehicle is already on the sale (qty is 1 per vehicle).
+    if ((s.remaining ?? s.qty) <= 0) return;
     setForm(f => {
+      if (f.vehicles.some(v => v.stockId === s._id)) return f;
       const rows = [...f.vehicles];
       const filled = {
         ...emptyVehicle(), stockId: s._id,
@@ -86,17 +89,26 @@ export default function Step3Vehicle({ form, setForm, setTop, errors }) {
                 <div className="px-3 py-4 text-center text-sm text-gray-400">
                   {stock.length === 0 ? 'No stock vehicles found' : 'No match'}
                 </div>
-              ) : filteredStock.map(s => (
-                <button key={s._id} type="button" onClick={() => pickStock(s)}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                  <div className="font-medium text-gray-800">{s.vehicleModel} {s.variant ? `· ${s.variant}` : ''} {s.color ? `· ${s.color}` : ''}</div>
+              ) : filteredStock.map(s => {
+                const remaining = s.remaining ?? s.qty;
+                const already   = vehicles.some(v => v.stockId === s._id);
+                const disabled  = remaining <= 0 || already;
+                return (
+                <button key={s._id} type="button" disabled={disabled} onClick={() => pickStock(s)}
+                  className={`w-full text-left px-3 py-2 text-sm border-b border-gray-100 last:border-0 ${disabled ? 'opacity-60 cursor-not-allowed bg-gray-50' : 'hover:bg-gray-50'}`}>
+                  <div className="font-medium text-gray-800">
+                    {s.vehicleModel} {s.variant ? `· ${s.variant}` : ''} {s.color ? `· ${s.color}` : ''}
+                    {remaining <= 0 && <span className="ml-2 text-[10px] font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Out of stock</span>}
+                    {remaining > 0 && already && <span className="ml-2 text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Already added</span>}
+                  </div>
                   <div className="text-xs text-gray-400">
                     Chassis: {s.chassisNumber || '-'} · Engine: {s.engineNumber || '-'}
                     <span className="ml-1">· Qty: {s.qty} · Used: {s.used ?? 0} · </span>
-                    <span className={`font-semibold ${(s.remaining ?? s.qty) <= 0 ? 'text-red-500' : 'text-green-600'}`}>Remaining: {s.remaining ?? s.qty}</span>
+                    <span className={`font-semibold ${remaining <= 0 ? 'text-red-500' : 'text-green-600'}`}>Remaining: {remaining}</span>
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

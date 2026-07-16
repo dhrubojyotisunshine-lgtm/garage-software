@@ -5,6 +5,7 @@ import { inventoryApi } from '../../api/inventory';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { useToast } from '../../components/ui/Toast';
 import { Button } from '../../components/ui/Button';
+import Pagination from '../../components/ui/Pagination';
 
 const TYPE_TABS = [
   { key: 'all',    label: 'All' },
@@ -26,6 +27,7 @@ export default function InventoryHistoryPage() {
   const [total, setTotal]       = useState(0);
   const [pages, setPages]       = useState(1);
   const [page, setPage]         = useState(1);
+  const [limit, setLimit]       = useState(20);
   const [loading, setLoading]   = useState(false);
   const [type, setType]         = useState('all');
   const [search, setSearch]     = useState('');
@@ -36,7 +38,7 @@ export default function InventoryHistoryPage() {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page, limit: 40 };
+      const params = { page, limit };
       if (type !== 'all') params.type = type;
       if (search) params.search = search;
       if (dateFrom) params.dateFrom = dateFrom;
@@ -48,9 +50,10 @@ export default function InventoryHistoryPage() {
     } catch {
       toast({ title: 'Failed to load history', variant: 'error' });
     } finally { setLoading(false); }
-  }, [page, type, search, dateFrom, dateTo]);
+  }, [page, limit, type, search, dateFrom, dateTo]);
 
   useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { setPage(1); }, [limit]);
 
   const handleSearch = () => { setSearch(searchInput); setPage(1); };
   const clearFilters = () => { setSearch(''); setSearchInput(''); setDateFrom(''); setDateTo(''); setPage(1); };
@@ -121,6 +124,7 @@ export default function InventoryHistoryPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-border">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sr No</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Item</th>
                 <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>
@@ -133,15 +137,16 @@ export default function InventoryHistoryPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} className="text-center py-12 text-gray-400">Loading...</td></tr>
+                <tr><td colSpan={9} className="text-center py-12 text-gray-400">Loading...</td></tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12">
+                  <td colSpan={9} className="text-center py-12">
                     <p className="text-gray-400 text-sm">No usage records found</p>
                   </td>
                 </tr>
               ) : rows.map((r, i) => (
                 <tr key={i} className="border-b border-border hover:bg-gray-50 transition-colors last:border-0">
+                  <td className="py-3 px-4 text-gray-500 text-xs">{(page - 1) * limit + i + 1}</td>
                   <td className="py-3 px-4 text-gray-500 text-xs whitespace-nowrap">{formatDate(r.date)}</td>
                   <td className="py-3 px-4">
                     <div className="font-medium text-gray-800">{r.itemName}</div>
@@ -173,18 +178,9 @@ export default function InventoryHistoryPage() {
           </table>
         </div>
 
-        {pages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-gray-50">
-            <span className="text-xs text-gray-500">Page {page} of {pages} · {total} records</span>
-            <div className="flex gap-1">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                className="px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-white disabled:opacity-40">Previous</button>
-              <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages}
-                className="px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-white disabled:opacity-40">Next</button>
-            </div>
-          </div>
-        )}
       </div>
+
+      <Pagination page={page} pages={pages} total={total} limit={limit} onPage={setPage} onLimit={setLimit} />
     </div>
   );
 }

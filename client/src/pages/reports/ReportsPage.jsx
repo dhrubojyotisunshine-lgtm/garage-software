@@ -6,6 +6,8 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 import { reportsApi } from '../../api/reports';
 import { mastersApi } from '../../api/masters';
 import { useToast } from '../../components/ui/Toast';
+import Pagination from '../../components/ui/Pagination';
+import useAuthStore from '../../store/authStore';
 
 /* ─── Config ──────────────────────────────────────────────── */
 const REPORT_TYPES = [
@@ -26,6 +28,7 @@ const REPORT_TYPES = [
   { value: 'gst-jobcard',            label: 'Jobcard' },
   { value: 'gst-purchase-order',     label: 'Purchase Order' },
   { value: 'gst-counter-sale',       label: 'Counter Sale' },
+  { value: 'csv-import-logs',        label: 'Inventory Import Logs' },
 ];
 
 const DATE_PRESETS = [
@@ -54,6 +57,7 @@ const COLUMNS = {
   'gst-jobcard':            ['Date','Jobcard #','Customer','Mobile','Vehicle','Spare','Lube','Labour','Subtotal','Discount','Bill','Received','Pending','Status'],
   'gst-purchase-order':     ['Date','PO #','Bill #','Supplier','Phone','Items','Subtotal','GST','Total','Paid','Balance','Status'],
   'gst-counter-sale':       ['Date','Counter #','Customer','Mobile','Vehicle','Items','Total','Received','Pending','Payment'],
+  'csv-import-logs':        ['Sr No','Date & Time','Imported By','Type','CSV Name','Rows','Action'],
   'gst-counter-sale-hsn':   ['HSN','Description','Qty','Taxable','GST %','GST Amount'],
   'insurance-expiry':       ['Customer','Mobile','Vehicle No','Make/Model','Insurance Expiry'],
 };
@@ -81,6 +85,7 @@ const FIELD_KEYS = {
   'gst-jobcard':          ['date','jobcardNumber','customerName','customerMobile','vehicle','spareTotal','lubeTotal','labourTotal','subtotal','discount','billAmount','paidAmount','balanceDue','statusLabel'],
   'gst-purchase-order':   ['date','poNumber','billNumber','supplierName','supplierPhone','itemCount','subtotal','gstAmount','totalPayable','paidAmount','pendingAmount','status'],
   'gst-counter-sale':     ['date','counterNumber','customerName','customerMobile','vehicleNumber','itemCount','total','paidAmount','balanceDue','paymentStatus'],
+  'csv-import-logs':      ['date','importedByName','itemType','fileName','insertedRows'],
 };
 const MONEY_KEYS = new Set(['spareTotal','lubeTotal','labourTotal','total','discount','billAmount','paidAmount','balanceDue','totalSpend','received','pending','todayPaid','amount','totalRevenue','stockValue','paid','subtotal','gstAmount','totalPayable','pendingAmount','purchase','sale','profit']);
 const USAGE_TYPES = ['spare-usages','lube-usages','job-usages','counter-sale-usage'];
@@ -442,6 +447,23 @@ function renderRow(type, row, i, onDateClick, onOpenSource, onOpenItem) {
         <td className={cls + ' text-red-600'}>{fmtINR(row.balanceDue)}</td>
         <td className={cls}>{payBadge(row.paymentStatus)}</td>
       </tr>;
+    case 'csv-import-logs': {
+      const token = localStorage.getItem('ttn_token');
+      const base = import.meta.env.VITE_API_URL || '/api';
+      const href = `${base}/inventory/import-logs/${row._id}/download?token=${encodeURIComponent(token || '')}`;
+      const dt = row.date
+        ? new Date(row.date).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })
+        : '—';
+      return <tr key={i} className="border-t border-gray-100 hover:bg-gray-50">
+        <td className={cls}>{i + 1}</td>
+        <td className={cls}>{dt}</td>
+        <td className={cls}>{row.importedByName} <span className="text-xs text-gray-400">({row.importedByType})</span></td>
+        <td className={cls}><span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">{row.itemType}</span></td>
+        <td className={cls}>{row.fileName}</td>
+        <td className={cls}>{row.insertedRows}{row.totalRows ? ` / ${row.totalRows}` : ''}</td>
+        <td className={cls}><a href={href} className="text-blue-600 hover:underline font-medium">Download</a></td>
+      </tr>;
+    }
     default:
       return <tr key={i} className="border-t border-gray-100"><td colSpan={10} className="px-4 py-2 text-gray-400 text-sm">—</td></tr>;
   }
@@ -755,6 +777,18 @@ function SummaryPanel({ type, summary, data }) {
           <div className="flex justify-between"><span className="text-gray-500">Received:</span><span className="font-medium text-green-600">{fmtINR(summary.totalReceived)}</span></div>
           <div className="flex justify-between"><span className="text-red-600 font-semibold">Pending:</span><span className="font-bold text-red-600">{fmtINR(summary.totalPending)}</span></div>
           <div className="flex justify-between border-t border-gray-200 pt-1"><span className="text-green-700 font-semibold">Today Collected:</span><span className="font-bold text-green-700">{fmtINR(summary.todayCollected)}</span></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'csv-import-logs') {
+    return (
+      <div>
+        <p className="font-semibold text-gray-700 mb-3">Import Summary</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-gray-50 rounded-lg px-3 py-2 text-center"><p className="text-xs text-gray-400">Imports</p><p className="text-lg font-bold text-gray-800">{summary.imports ?? data.length}</p></div>
+          <div className="bg-gray-50 rounded-lg px-3 py-2 text-center"><p className="text-xs text-gray-400">Rows Inserted</p><p className="text-lg font-bold text-gray-800">{summary.rowsInserted ?? 0}</p></div>
         </div>
       </div>
     );
@@ -1145,6 +1179,10 @@ function StockStatementModal({ item, fromDate, toDate, onClose }) {
 /* ─── Main ────────────────────────────────────────────────── */
 export default function ReportsPage() {
   const { toast } = useToast();
+  const { isStaff, staffUser } = useAuthStore();
+  // Profit report is permission-gated for staff; owners always see it.
+  const canViewProfit = !isStaff || !!staffUser?.roleId?.reportPermissions?.canViewProfit;
+  const visibleReportTypes = REPORT_TYPES.filter(r => r.value !== 'profit' || canViewProfit);
   const [reportType, setReportType] = useState('jobcard-revenue');
   const [preset, setPreset]         = useState('1 Month');
   const [fromDate, setFrom]         = useState(subtractDays(todayStr(), 30));
@@ -1172,7 +1210,15 @@ export default function ReportsPage() {
   const [invStatus, setInvStatus]         = useState('all');
   const [invMostUsed, setInvMostUsed]     = useState(false);
   const [invSource, setInvSource]         = useState('all');
+  const [page, setPage]                   = useState(1);
+  const [limit, setLimit]                 = useState(50);
   const navigate = useNavigate();
+
+  // Client-side pagination of the report table (totals/summary/CSV stay over full data)
+  const totalRows  = data.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / limit));
+  const pagedData  = data.slice((page - 1) * limit, page * limit);
+  useEffect(() => { setPage(1); }, [data, limit]);
 
   const statusOpts   = STATUS_OPTIONS[reportType];
   const showStaff    = reportType === 'jobcard-revenue';   // mechanic/supervisor filters
@@ -1298,7 +1344,7 @@ export default function ReportsPage() {
                 onChange={e => handleType(e.target.value)}
                 className={INPUT_CLS}
               >
-                {REPORT_TYPES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                {visibleReportTypes.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
             </div>
 
@@ -1505,12 +1551,14 @@ export default function ReportsPage() {
                   {!loading && data.length === 0 && (
                     <tr><td colSpan={cols.length} className="text-center py-10 text-gray-400">No data for selected period</td></tr>
                   )}
-                  {!loading && data.map((row, i) => renderRow(reportType, row, i, (DATE_MODAL_TYPES.includes(reportType) || reportType === 'profit') ? setModalDate : null, openSource, reportType === 'inventory-summary' ? setItemUsage : (reportType === 'spare-usages' || reportType === 'lube-usages') ? setStmtItem : null))}
+                  {!loading && pagedData.map((row, idx) => renderRow(reportType, row, (page - 1) * limit + idx, (DATE_MODAL_TYPES.includes(reportType) || reportType === 'profit') ? setModalDate : null, openSource, reportType === 'inventory-summary' ? setItemUsage : (reportType === 'spare-usages' || reportType === 'lube-usages') ? setStmtItem : null))}
                   {!loading && data.length > 0 && <TotalsRow type={reportType} data={data} />}
                 </tbody>
               </table>
             </div>
           )}
+
+          {!note && <Pagination page={page} pages={totalPages} total={totalRows} limit={limit} onPage={setPage} onLimit={setLimit} />}
         </>
       )}
 

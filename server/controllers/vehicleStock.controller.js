@@ -13,21 +13,31 @@ function pick(body = {}) {
   };
 }
 
-// GET /api/vehicle-stock  — list (optional ?search=)
+// GET /api/vehicle-stock  — paginated list (?page= &limit= &search=). Pass ?all=1
+// to get every record (used by the stock picker & reports). Always returns
+// { items, total, page, pages, limit }.
 exports.list = async (req, res) => {
   try {
-    const { search } = req.query;
+    const { search, all } = req.query;
+    const page  = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 20);
     const q = { garageId: req.garage._id, active: { $ne: false } };
-    if (search) {
-      q.$or = [
-        { vehicleModel:  { $regex: search, $options: 'i' } },
-        { variant:       { $regex: search, $options: 'i' } },
-        { color:         { $regex: search, $options: 'i' } },
-        { chassisNumber: { $regex: search, $options: 'i' } },
-        { engineNumber:  { $regex: search, $options: 'i' } }
-      ];
+    if (search && search.trim()) {
+      // Multi-term search: every word must appear in at least one field, so
+      // "activa 110 std" matches model "Activa 110" + variant "std", and
+      // "activa white" matches model + color — same behaviour as the sale picker.
+      const fields = ['vehicleModel', 'variant', 'color', 'chassisNumber', 'engineNumber'];
+      const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const terms = search.trim().split(/\s+/).filter(Boolean);
+      q.$and = terms.map(t => ({
+        $or: fields.map(f => ({ [f]: { $regex: esc(t), $options: 'i' } }))
+      }));
     }
-    const stock = await VehicleStock.find(q).sort({ createdAt: -1 });
+
+    const total = await VehicleStock.countDocuments(q);
+    let query = VehicleStock.find(q).sort({ createdAt: -1 });
+    if (!all) query = query.skip((page - 1) * limit).limit(limit);
+    const stock = await query;
 
     // Used = number of sold vehicles (across active sales) linked to each stock item.
     const ids = stock.map(s => s._id);
@@ -39,11 +49,18 @@ exports.list = async (req, res) => {
     ]) : [];
     const usedMap = new Map(usage.map(u => [String(u._id), u.used]));
 
-    const out = stock.map(s => {
+    const items = stock.map(s => {
       const used = usedMap.get(String(s._id)) || 0;
       return { ...s.toObject(), used, remaining: (s.qty || 0) - used };
     });
-    res.json(out);
+
+    res.json({
+      items,
+      total,
+      page:  all ? 1 : page,
+      pages: all ? 1 : Math.max(1, Math.ceil(total / limit)),
+      limit: all ? total : limit
+    });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 

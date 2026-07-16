@@ -2,10 +2,14 @@ const Party = require('../models/party.model');
 const Ledger = require('../models/ledger.model');
 const { validateParty } = require('../validation/party.validation');
 
-// GET /api/party  — list of parties, each enriched with its ledger balance.
+// GET /api/party  — paginated list of parties, each enriched with its ledger balance.
+// ?page= &limit= &search=. ?all=1 returns everything (used by the party picker).
+// Always returns { items, total, page, pages, limit }.
 exports.list = async (req, res) => {
   try {
-    const { search } = req.query;
+    const { search, all } = req.query;
+    const page  = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 20);
     const q = { garageId: req.garage._id };
     if (search) {
       q.$or = [
@@ -13,7 +17,10 @@ exports.list = async (req, res) => {
         { phone:     { $regex: search, $options: 'i' } }
       ];
     }
-    const parties = await Party.find(q).sort({ partyName: 1 });
+    const total = await Party.countDocuments(q);
+    let query = Party.find(q).sort({ partyName: 1 });
+    if (!all) query = query.skip((page - 1) * limit).limit(limit);
+    const parties = await query;
 
     const ids = parties.map(p => p._id);
     const agg = ids.length ? await Ledger.aggregate([
@@ -28,7 +35,7 @@ exports.list = async (req, res) => {
     ]) : [];
     const m = new Map(agg.map(a => [String(a._id), a]));
 
-    const out = parties.map(p => {
+    const items = parties.map(p => {
       const a = m.get(String(p._id)) || { credit: 0, debit: 0, count: 0, lastDate: null };
       return {
         ...p.toObject(),
@@ -36,7 +43,12 @@ exports.list = async (req, res) => {
         txnCount: a.count, lastDate: a.lastDate
       };
     });
-    res.json(out);
+    res.json({
+      items, total,
+      page:  all ? 1 : page,
+      pages: all ? 1 : Math.max(1, Math.ceil(total / limit)),
+      limit: all ? total : limit
+    });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 

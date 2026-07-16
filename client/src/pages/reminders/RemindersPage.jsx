@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { BellRing, RefreshCw, MessageCircle, Phone, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
 import { reportsApi } from '../../api/reports';
+import Pagination from '../../components/ui/Pagination';
 import { useToast } from '../../components/ui/Toast';
 import useAuthStore from '../../store/authStore';
 import { buildReminderWhatsappUrl } from '../../utils/whatsapp';
@@ -21,6 +22,8 @@ export default function RemindersPage() {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
 
   const load = async () => {
     setLoading(true);
@@ -53,6 +56,11 @@ export default function RemindersPage() {
       return new Date(a.nextDue || 0) - new Date(b.nextDue || 0);
     });
   }, [rows, filter, search]);
+
+  const totalRows  = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / limit));
+  const paged      = filtered.slice((page - 1) * limit, page * limit);
+  useEffect(() => { setPage(1); }, [filter, search, limit]);
 
   const statusBadge = (status) => {
     if (status === 'Overdue') return 'bg-red-100 text-red-700';
@@ -118,22 +126,23 @@ export default function RemindersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-border">
-                {['Status', 'Customer', 'Vehicle', 'Last Visit', 'Reminder', 'Next Due', 'Actions'].map((h, i) => (
-                  <th key={h} className={`py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide ${i === 6 ? 'text-center' : 'text-left'}`}>{h}</th>
+                {['Sr No', 'Status', 'Customer', 'Vehicle', 'Last Visit', 'Reminder', 'Next Due', 'Actions'].map((h, i) => (
+                  <th key={h} className={`py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide ${i === 7 ? 'text-center' : 'text-left'}`}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading...</td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-12">
+                <tr><td colSpan={8} className="text-center py-12 text-gray-400">Loading...</td></tr>
+              ) : paged.length === 0 ? (
+                <tr><td colSpan={8} className="text-center py-12">
                   <BellRing size={40} className="text-gray-200 mx-auto mb-3" />
                   <p className="text-gray-400 text-sm">No reminders found</p>
                   <p className="text-gray-300 text-xs mt-1">Set Reminder KM / Period on a jobcard to see vehicles here</p>
                 </td></tr>
-              ) : filtered.map((r, idx) => (
-                <tr key={idx} className="border-b border-border hover:bg-gray-50 last:border-0">
+              ) : paged.map((r, idx) => (
+                <tr key={(page - 1) * limit + idx} className="border-b border-border hover:bg-gray-50 last:border-0">
+                  <td className="py-3 px-4 text-gray-500 text-xs">{(page - 1) * limit + idx + 1}</td>
                   <td className="py-3 px-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusBadge(r.status)}`}>{r.status}</span>
                   </td>
@@ -171,6 +180,8 @@ export default function RemindersPage() {
           </table>
         </div>
       </div>
+
+      <Pagination page={page} pages={totalPages} total={totalRows} limit={limit} onPage={setPage} onLimit={setLimit} />
     </div>
   );
 }

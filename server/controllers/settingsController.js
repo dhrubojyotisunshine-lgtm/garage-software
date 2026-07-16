@@ -18,6 +18,7 @@ const sanitize = (garage) => ({
   state: garage.state,
   zipcode: garage.zipcode,
   address: garage.address,
+  gstNo: garage.gstNo,
   isVerified: garage.isVerified,
   logoUrl: garage.logoUrl,
   signatureUrl: garage.signatureUrl,
@@ -37,7 +38,7 @@ const getSettings = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const { firstName, lastName, workshopName, email, mobile2, rtoNo,
-      city, state, zipcode, address, vehicleTypes } = req.body;
+      city, state, zipcode, address, gstNo, vehicleTypes } = req.body;
 
     const garage = await Garage.findById(req.garage._id);
     if (firstName !== undefined) garage.firstName = firstName;
@@ -50,6 +51,7 @@ const updateProfile = async (req, res) => {
     if (state !== undefined) garage.state = state;
     if (zipcode !== undefined) garage.zipcode = zipcode;
     if (address !== undefined) garage.address = address;
+    if (gstNo !== undefined) garage.gstNo = gstNo;
     if (vehicleTypes !== undefined) garage.vehicleTypes = vehicleTypes;
 
     await garage.save();

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { DateField } from '../../components/ui/DateField';
 import { Search, Calendar, Trash2, TrendingUp, TrendingDown, X, ChevronDown, Wallet } from 'lucide-react';
 import { cashbookApi } from '../../api/cashbook';
+import Pagination from '../../components/ui/Pagination';
 import { useToast } from '../../components/ui/Toast';
 
 // Manual IN entries are limited to "Other Income" — Jobcard/Counter Sale payments
@@ -323,6 +324,8 @@ export default function CashbookPage() {
   const [loading, setLoading]     = useState(false);
   const [modalType, setModalType] = useState(null); // 'IN' | 'OUT' | null
   const [deletingId, setDelId]    = useState(null);
+  const [page, setPage]           = useState(1);
+  const [limit, setLimit]         = useState(20);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -361,6 +364,11 @@ export default function CashbookPage() {
 
   const todayLabel = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
+  const totalRows  = entries.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / limit));
+  const paged      = entries.slice((page - 1) * limit, page * limit);
+  useEffect(() => { setPage(1); }, [search, filterCat, filterType, filterPayMode, filterDateFrom, filterDateTo, limit]);
+
   return (
     <div>
       {/* ── Header ── */}
@@ -393,10 +401,10 @@ export default function CashbookPage() {
               <TrendingUp size={26} className="text-green-500" />
             </div>
             <div>
-              <div className="text-xs text-blue-600 font-medium mb-0.5">Cash Received</div>
+              <div className="text-base text-blue-600 font-semibold mb-0.5">Total Received</div>
               <div className="text-2xl font-bold text-gray-800">₹ {stats.cashReceived.toLocaleString('en-IN')}</div>
               <div className="flex items-center gap-2 mt-1 text-xs font-medium">
-                <span className="px-2 py-0.5 rounded-full bg-white/70 text-gray-700">Cash ₹ {(stats.cashReceivedCash || 0).toLocaleString('en-IN')}</span>
+                <span className="px-2 py-0.5 rounded-full bg-white/70 text-gray-700 text-sm font-bold">Cash ₹ {(stats.cashReceivedCash || 0).toLocaleString('en-IN')}</span>
                 <span className="px-2 py-0.5 rounded-full bg-white/70 text-gray-700">Online ₹ {(stats.cashReceivedOnline || 0).toLocaleString('en-IN')}</span>
               </div>
             </div>
@@ -491,6 +499,7 @@ export default function CashbookPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-gray-50">
+              <th className="text-left py-3 px-5 font-semibold text-gray-600 text-xs uppercase tracking-wide">Sr No</th>
               <th className="text-left py-3 px-5 font-semibold text-gray-600 text-xs uppercase tracking-wide">Date &amp; Time</th>
               <th className="text-left py-3 px-5 font-semibold text-gray-600 text-xs uppercase tracking-wide">Name / Description</th>
               <th className="text-left py-3 px-5 font-semibold text-gray-600 text-xs uppercase tracking-wide">Reference Number</th>
@@ -502,11 +511,12 @@ export default function CashbookPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="py-12 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={8} className="py-12 text-center text-gray-400">Loading…</td></tr>
             ) : entries.length === 0 ? (
-              <tr><td colSpan={7} className="py-12 text-center text-gray-400">No cashbook entries found</td></tr>
-            ) : entries.map(e => (
+              <tr><td colSpan={8} className="py-12 text-center text-gray-400">No cashbook entries found</td></tr>
+            ) : paged.map((e, idx) => (
               <tr key={e._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td className="py-3 px-5 text-gray-500 text-xs">{(page - 1) * limit + idx + 1}</td>
                 <td className="py-3 px-5 text-gray-600 text-xs whitespace-nowrap">{fmtDateTime(e.date || e.createdAt)}</td>
                 <td className="py-3 px-5">
                   <div className="font-medium text-gray-800">{e.referenceName || e.description || '—'}</div>
@@ -546,6 +556,8 @@ export default function CashbookPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} pages={totalPages} total={totalRows} limit={limit} onPage={setPage} onLimit={setLimit} />
 
       {/* ── Entry Modal ── */}
       {modalType && (

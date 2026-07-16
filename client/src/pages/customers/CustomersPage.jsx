@@ -7,6 +7,7 @@ import {
 import { customersApi } from '../../api/customers';
 import { mastersApi } from '../../api/masters';
 import { useToast } from '../../components/ui/Toast';
+import Pagination from '../../components/ui/Pagination';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { getInitials } from '../../utils/format';
@@ -22,6 +23,7 @@ export default function CustomersPage() {
   const [total, setTotal]           = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage]             = useState(1);
+  const [limit, setLimit]           = useState(30);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch]         = useState('');
   const [statusFilter, setStatus]   = useState('all');
@@ -37,7 +39,7 @@ export default function CustomersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { search, page, limit: 30 };
+      const params = { search, page, limit };
       if (statusFilter !== 'all') params.status = statusFilter;
       const { data } = await customersApi.list(params);
       setCustomers(data.customers);
@@ -46,9 +48,10 @@ export default function CustomersPage() {
     } catch {
       toast({ title: 'Failed to load customers', variant: 'error' });
     } finally { setLoading(false); }
-  }, [search, page, statusFilter]);
+  }, [search, page, statusFilter, limit]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setPage(1); }, [search, statusFilter, limit]);
 
   useEffect(() => {
     Promise.all([mastersApi.list('vehicle-makes'), mastersApi.list('vehicle-models')])
@@ -142,6 +145,7 @@ export default function CustomersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-border">
+                <th className="text-left py-3 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sr No</th>
                 <th className="text-left py-3 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer Details</th>
                 <th className="text-left py-3 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Model</th>
                 <th className="text-left py-3 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reg No.</th>
@@ -151,17 +155,17 @@ export default function CustomersPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={5} className="text-center py-12 text-gray-400">Loading...</td></tr>
+                <tr><td colSpan={6} className="text-center py-12 text-gray-400">Loading...</td></tr>
               ) : customers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-14">
+                  <td colSpan={6} className="text-center py-14">
                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <UserPlus size={22} className="text-gray-300" />
                     </div>
                     <p className="text-gray-400 text-sm font-medium">No customers found</p>
                   </td>
                 </tr>
-              ) : customers.map(c => {
+              ) : customers.map((c, idx) => {
                 const st = c._stats || {};
                 const firstVehicle = c.vehicles?.[0];
                 return (
@@ -170,6 +174,7 @@ export default function CustomersPage() {
                     className="border-b border-border hover:bg-gray-50 cursor-pointer transition-colors last:border-0"
                     onClick={() => navigate(`/customers/${c._id}`)}
                   >
+                    <td className="py-3.5 px-5 text-gray-500">{(page - 1) * limit + idx + 1}</td>
                     {/* Customer Details: Name + Mobile */}
                     <td className="py-3.5 px-5">
                       <div className="flex items-center gap-3">
@@ -227,15 +232,9 @@ export default function CustomersPage() {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-gray-50">
-            <span className="text-xs text-gray-500">Page {page} of {totalPages}</span>
-            <div className="flex gap-1">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                className="px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-white disabled:opacity-40">Previous</button>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                className="px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-white disabled:opacity-40">Next</button>
-            </div>
+        {total > 0 && (
+          <div className="px-5 pb-4 border-t border-border">
+            <Pagination page={page} pages={totalPages} total={total} limit={limit} onPage={setPage} onLimit={setLimit} />
           </div>
         )}
       </div>

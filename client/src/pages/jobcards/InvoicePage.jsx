@@ -71,6 +71,7 @@ export default function InvoicePage() {
       metaRows={metaRows}
       items={jc.items || []}
       customerVoice={jc.customerVoiceLabels || []}
+      advice={(jc.workNotes || []).map(w => w.note).filter(Boolean)}
       summary={{ total: bill, paid, balance: bal, showPayment: true }}
       paymentStatus={paymentStatus}
       reminder={{

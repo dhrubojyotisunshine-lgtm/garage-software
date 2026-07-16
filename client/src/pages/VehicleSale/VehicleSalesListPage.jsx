@@ -5,28 +5,38 @@ import { vehicleSaleApi } from '../../api/vehicleSaleApi';
 import { useToast } from '../../components/ui/Toast';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { downloadInvoicePdf } from './invoicePdf';
+import useAuthStore from '../../store/authStore';
 import PaymentModal from '../../components/VehicleSale/PaymentModal';
 import PaymentHistoryModal from '../../components/VehicleSale/PaymentHistoryModal';
+import Pagination from '../../components/ui/Pagination';
 
 export default function VehicleSalesListPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { garage } = useAuthStore();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [payFor, setPayFor] = useState(null);      // sale to add a payment to
   const [historyFor, setHistoryFor] = useState(null); // sale to view history
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await vehicleSaleApi.list({ search: search || undefined });
-      setSales(data);
+      const { data } = await vehicleSaleApi.list({ page, limit, search: search || undefined });
+      setSales(data.items || []);
+      setTotal(data.total || 0);
+      setPages(data.pages || 1);
     } catch { toast({ title: 'Failed to load sales', variant: 'error' }); }
     finally { setLoading(false); }
-  }, [search]);
+  }, [page, limit, search]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setPage(1); }, [search, limit]);
 
   const handleDelete = async (e, id) => {
     e.stopPropagation();
@@ -76,7 +86,7 @@ export default function VehicleSalesListPage() {
             ) : sales.map((s, idx) => (
               <tr key={s._id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 cursor-pointer"
                 onClick={() => navigate(`/sale/vehicle-sales/${s._id}`)}>
-                <td className="py-3 px-4 text-gray-500">{idx + 1}</td>
+                <td className="py-3 px-4 text-gray-500">{(page - 1) * limit + idx + 1}</td>
                 <td className="py-3 px-4" onClick={e => e.stopPropagation()}>
                   <button onClick={() => navigate(`/vehicle-sale-invoice/${s._id}`)}
                     className="font-medium text-gray-800 underline underline-offset-2 hover:text-primary">
@@ -108,7 +118,7 @@ export default function VehicleSalesListPage() {
                     <button onClick={() => setHistoryFor(s)} title="Payment History" className="p-1.5 rounded-lg hover:bg-violet-50 text-violet-500 hover:text-violet-700">
                       <History size={14} />
                     </button>
-                    <button onClick={() => downloadInvoicePdf(s)} title="Download Invoice PDF" className="p-1.5 rounded-lg hover:bg-green-50 text-green-500 hover:text-green-700">
+                    <button onClick={() => downloadInvoicePdf(s, garage?.gstNo)} title="Download Invoice PDF" className="p-1.5 rounded-lg hover:bg-green-50 text-green-500 hover:text-green-700">
                       <Download size={14} />
                     </button>
                     <button onClick={() => navigate(`/sale/vehicle-sales/${s._id}`)} title="Edit" className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-400 hover:text-blue-600">
@@ -124,6 +134,8 @@ export default function VehicleSalesListPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} pages={pages} total={total} limit={limit} onPage={setPage} onLimit={setLimit} />
 
       {payFor && (
         <PaymentModal

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Pencil, Trash2 } from 'lucide-react';
 import { vehicleStockApi } from '../../api/vehicleStockApi';
 import { useToast } from '../../components/ui/Toast';
+import Pagination from '../../components/ui/Pagination';
 
 export default function VehicleStockList() {
   const navigate = useNavigate();
@@ -10,17 +11,26 @@ export default function VehicleStockList() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await vehicleStockApi.list({ search: search || undefined });
-      setRows(Array.isArray(data) ? data : []);
+      const { data } = await vehicleStockApi.list({ page, limit, search: search || undefined });
+      setRows(data.items || []);
+      setTotal(data.total || 0);
+      setPages(data.pages || 1);
     } catch { toast({ title: 'Failed to load stock', variant: 'error' }); }
     finally { setLoading(false); }
-  }, [search]);
+  }, [page, limit, search]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Reset to page 1 whenever the search or page size changes.
+  useEffect(() => { setPage(1); }, [search, limit]);
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this stock record?')) return;
@@ -68,7 +78,7 @@ export default function VehicleStockList() {
               <tr><td colSpan={cols.length} className="text-center py-12 text-gray-400">No stock records found</td></tr>
             ) : rows.map((r, idx) => (
               <tr key={r._id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                <td className="py-3 px-4 text-gray-500">{idx + 1}</td>
+                <td className="py-3 px-4 text-gray-500">{(page - 1) * limit + idx + 1}</td>
                 <td className="py-3 px-4 font-medium text-gray-800">{r.vehicleModel}</td>
                 <td className="py-3 px-4 text-gray-700">{r.variant || '-'}</td>
                 <td className="py-3 px-4 text-gray-700">{r.color || '-'}</td>
@@ -94,6 +104,8 @@ export default function VehicleStockList() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} pages={pages} total={total} limit={limit} onPage={setPage} onLimit={setLimit} />
     </div>
   );
 }

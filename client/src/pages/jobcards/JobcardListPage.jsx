@@ -8,6 +8,7 @@ import { buildInvoiceWhatsappUrl } from '../../utils/whatsapp';
 import { useToast } from '../../components/ui/Toast';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import Pagination from '../../components/ui/Pagination';
 import useAuthStore from '../../store/authStore';
 
 const STATUS_FILTERS = [
@@ -42,25 +43,29 @@ export default function JobcardListPage() {
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(20);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { status: statusFilter, search, page };
+      const params = { status: statusFilter, search, page, limit };
       if (dateFrom) params.dateFrom = dateFrom;
       if (dateTo) params.dateTo = dateTo;
       const { data } = await jobcardsApi.list(params);
       setJobcards(data.jobcards);
       setCounts(data.counts);
       setTotalPages(data.pages);
+      setTotal(data.total);
     } catch {
       toast({ title: 'Failed to load jobcards', variant: 'error' });
     } finally { setLoading(false); }
-  }, [statusFilter, search, page, dateFrom, dateTo]);
+  }, [statusFilter, search, page, limit, dateFrom, dateTo]);
 
   useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { setPage(1); }, [search, limit, dateFrom, dateTo]);
 
   const handleSearch = () => { setSearch(searchInput); setPage(1); };
 
@@ -194,6 +199,7 @@ export default function JobcardListPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-border">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sr No</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Entry Date</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jobcard No.</th>
@@ -207,10 +213,10 @@ export default function JobcardListPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} className="text-center py-12 text-gray-400">Loading...</td></tr>
+                <tr><td colSpan={10} className="text-center py-12 text-gray-400">Loading...</td></tr>
               ) : jobcards.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12">
+                  <td colSpan={10} className="text-center py-12">
                     <FileText size={40} className="text-gray-200 mx-auto mb-3" />
                     <p className="text-gray-400 text-sm">No jobcards found</p>
                     <button
@@ -221,12 +227,13 @@ export default function JobcardListPage() {
                     </button>
                   </td>
                 </tr>
-              ) : jobcards.map(jc => (
+              ) : jobcards.map((jc, idx) => (
                 <tr
                   key={jc._id}
                   className="border-b border-border hover:bg-gray-50 cursor-pointer transition-colors last:border-0"
                   onClick={() => openCard(jc._id)}
                 >
+                  <td className="py-3 px-4 text-gray-500">{(page - 1) * limit + idx + 1}</td>
                   <td className="py-3 px-4 text-gray-500 text-xs">{formatDate(jc.createdAt)}</td>
                   <td className="py-3 px-4">
                     <Badge variant={statusVariant(jc.statusCategory)}>
@@ -296,25 +303,9 @@ export default function JobcardListPage() {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-gray-50">
-            <span className="text-xs text-gray-500">Page {page} of {totalPages}</span>
-            <div className="flex gap-1">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-white disabled:opacity-40"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-white disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
+        {total > 0 && (
+          <div className="px-4 pb-4 border-t border-border">
+            <Pagination page={page} pages={totalPages} total={total} limit={limit} onPage={setPage} onLimit={setLimit} />
           </div>
         )}
       </div>

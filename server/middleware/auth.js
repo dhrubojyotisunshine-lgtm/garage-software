@@ -25,7 +25,7 @@ const protect = async (req, res, next) => {
 
     if (decoded.role === 'staff') {
       const staff = await Staff.findById(decoded.id)
-        .populate('roleId', 'name menuAccess jobcardPermissions stockPermissions vehicleSalePermissions')
+        .populate('roleId', 'name menuAccess jobcardPermissions stockPermissions vehicleSalePermissions reportPermissions')
         .select('-password');
       if (!staff || staff.active === false) return res.status(401).json({ message: 'Staff account not found or inactive' });
       const garage = await Garage.findById(decoded.garageId).select('-password -otp -otpExpiry');

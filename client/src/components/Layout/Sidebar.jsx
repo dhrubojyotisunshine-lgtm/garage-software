@@ -44,6 +44,14 @@ const ALL_NAV = [
   { key: 'settings',    label: 'Settings',    icon: Settings,   path: '/settings' },
 ];
 
+// Landing path for a staff member: first menu (in nav order) they have access to.
+// Falls back to /dashboard when no explicit menuAccess is set (they see everything then).
+export function firstAllowedPath(menuAccess) {
+  if (!Array.isArray(menuAccess) || menuAccess.length === 0) return '/dashboard';
+  const first = ALL_NAV.find(n => menuAccess.includes(n.key));
+  return first ? first.path : '/dashboard';
+}
+
 export function Sidebar({ collapsed, onToggle, mobileOpen = false, onNavigate }) {
   const location     = useLocation();
   const { garage, isStaff, staffUser } = useAuthStore();

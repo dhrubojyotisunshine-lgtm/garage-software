@@ -99,7 +99,9 @@ function summarise(events) {
 
 router.get('/', async (req, res) => {
   try {
-    const { search } = req.query;
+    const { search, all } = req.query;
+    const page  = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 20);
     const q = { garageId: req.garage._id, active: { $ne: false } };
     if (search) {
       q.$or = [
@@ -108,8 +110,16 @@ router.get('/', async (req, res) => {
         { firstName: { $regex: search, $options: 'i' } }
       ];
     }
-    const suppliers = await Supplier.find(q).sort({ createdAt: 1 });
-    res.json(suppliers);
+    const total = await Supplier.countDocuments(q);
+    let query = Supplier.find(q).sort({ createdAt: 1 });
+    if (!all) query = query.skip((page - 1) * limit).limit(limit);
+    const items = await query;
+    res.json({
+      items, total,
+      page:  all ? 1 : page,
+      pages: all ? 1 : Math.max(1, Math.ceil(total / limit)),
+      limit: all ? total : limit
+    });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

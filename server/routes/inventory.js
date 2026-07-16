@@ -8,6 +8,28 @@ const LabourItem = require('../models/masters/LabourItem');
 const ServicePackage = require('../models/masters/ServicePackage');
 const Jobcard = require('../models/Jobcard');
 const CounterSale = require('../models/CounterSale');
+const InventoryImportLog = require('../models/InventoryImportLog');
+
+// Record a successful CSV import (only when ≥1 row was inserted). Never throws —
+// logging must not break the import itself.
+async function logImport(req, type, totalRows, insertedRows) {
+  if (!insertedRows || insertedRows < 1) return;
+  try {
+    await InventoryImportLog.create({
+      garageId: req.garage._id,
+      type,
+      fileName: req.file?.originalname || 'import.csv',
+      content: req.file?.buffer ? req.file.buffer.toString('utf8') : '',
+      totalRows,
+      insertedRows,
+      importedById: req.staff ? req.staff._id : req.garage._id,
+      importedByName: req.staff
+        ? req.staff.name
+        : (req.garage.workshopName || [req.garage.firstName, req.garage.lastName].filter(Boolean).join(' ') || 'Owner'),
+      importedByType: req.staff ? 'Staff' : 'Owner',
+    });
+  } catch (e) { /* swallow: audit logging is best-effort */ }
+}
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
@@ -36,6 +58,32 @@ async function dedupeImport(Model, garageId, docs, codeField) {
     fresh.push(d);
   }
   return { fresh, skipped };
+}
+
+// Stock import (spares/lubes): ADD the CSV stock to existing parts (matched by code),
+// and create new parts. Rows in the same file sharing a code have their stock summed.
+async function upsertStockImport(Model, garageId, docs, codeField) {
+  const byCode = new Map();
+  for (const d of docs) {
+    const key = (d[codeField] || '').trim().toLowerCase();
+    if (byCode.has(key)) byCode.get(key).addQty += (d.currentStock || 0);
+    else byCode.set(key, { doc: d, addQty: d.currentStock || 0 });
+  }
+  const existing = await Model.find({ garageId, active: { $ne: false } }, codeField).lean();
+  const existingMap = new Map(existing.map(e => [(e[codeField] || '').trim().toLowerCase(), e._id]));
+
+  const toInsert = [];
+  const updates = [];
+  for (const [key, { doc, addQty }] of byCode) {
+    const id = existingMap.get(key);
+    if (id) updates.push({ updateOne: { filter: { _id: id }, update: { $inc: { currentStock: addQty } } } });
+    else toInsert.push(doc); // doc.currentStock already equals addQty → initial stock
+  }
+
+  let inserted = 0, updated = 0;
+  if (toInsert.length) { const r = await Model.insertMany(toInsert, { ordered: false }); inserted = r.length; }
+  if (updates.length)  { const r = await Model.bulkWrite(updates, { ordered: false }); updated = r.matchedCount ?? updates.length; }
+  return { inserted, updated };
 }
 
 router.use(protect);
@@ -80,15 +128,15 @@ router.post('/import/spares', upload.single('file'), async (req, res) => {
       purchasePrice: Number(r.purchasePrice) || 0,
       sellingPrice: Number(r.sellingPrice) || 0,
       unitPrice: Number(r.sellingPrice) || 0,
-      currentStock: Number(r.currentStock) || 0,
+      currentStock: Number(r.addStock ?? r.currentStock) || 0,
       lowerLimit: Number(r.lowerLimit) || 0,
       rackNumber: r.rackNumber || '',
       allVehicles: true
     })).filter(d => d.partNumber?.trim());
     if (!docs.length) return res.status(400).json({ message: 'No valid rows found in CSV (partNumber is required for every row)' });
-    const { fresh, skipped } = await dedupeImport(SparePart, req.garage._id, docs, 'partNumber');
-    const result = fresh.length ? await SparePart.insertMany(fresh, { ordered: false }) : [];
-    res.json({ inserted: result.length, total: rows.length, skipped });
+    const { inserted, updated } = await upsertStockImport(SparePart, req.garage._id, docs, 'partNumber');
+    await logImport(req, 'spares', rows.length, inserted + updated);
+    res.json({ inserted, updated, total: rows.length });
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
@@ -105,15 +153,15 @@ router.post('/import/lubes', upload.single('file'), async (req, res) => {
       purchasePrice: Number(r.purchasePrice) || 0,
       sellingPrice: Number(r.sellingPrice) || 0,
       unitPrice: Number(r.sellingPrice) || 0,
-      currentStock: Number(r.currentStock) || 0,
+      currentStock: Number(r.addStock ?? r.currentStock) || 0,
       lowerLimit: Number(r.lowerLimit) || 0,
       rackNumber: r.rackNumber || '',
       allVehicles: true
     })).filter(d => d.partNumber?.trim());
     if (!docs.length) return res.status(400).json({ message: 'No valid rows found in CSV (partNumber is required for every row)' });
-    const { fresh, skipped } = await dedupeImport(Lube, req.garage._id, docs, 'partNumber');
-    const result = fresh.length ? await Lube.insertMany(fresh, { ordered: false }) : [];
-    res.json({ inserted: result.length, total: rows.length, skipped });
+    const { inserted, updated } = await upsertStockImport(Lube, req.garage._id, docs, 'partNumber');
+    await logImport(req, 'lubes', rows.length, inserted + updated);
+    res.json({ inserted, updated, total: rows.length });
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
@@ -134,7 +182,20 @@ router.post('/import/jobs', upload.single('file'), async (req, res) => {
     if (!docs.length) return res.status(400).json({ message: 'No valid rows found in CSV (jobCode is required for every row)' });
     const { fresh, skipped } = await dedupeImport(LabourItem, req.garage._id, docs, 'jobCode');
     const result = fresh.length ? await LabourItem.insertMany(fresh, { ordered: false }) : [];
+    await logImport(req, 'jobs', rows.length, result.length);
     res.json({ inserted: result.length, total: rows.length, skipped });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+// Download the exact CSV that was uploaded for a given import log.
+router.get('/import-logs/:id/download', async (req, res) => {
+  try {
+    const log = await InventoryImportLog.findOne({ _id: req.params.id, garageId: req.garage._id }).lean();
+    if (!log) return res.status(404).json({ message: 'Not found' });
+    const safeName = (log.fileName || 'import.csv').replace(/[^\w.\- ]/g, '_');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+    return res.send(log.content || '');
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 

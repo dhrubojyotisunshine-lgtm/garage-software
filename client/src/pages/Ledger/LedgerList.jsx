@@ -5,6 +5,7 @@ import { partyApi } from '../../api/partyApi';
 import { useToast } from '../../components/ui/Toast';
 import { formatCurrency } from '../../utils/format';
 import PartyModal from '../../components/PartyModal';
+import Pagination from '../../components/ui/Pagination';
 
 const COLUMNS = ['Sr No', 'Party Name', 'Phone', 'Total Debit', 'Total Credit', 'Balance', 'Action'];
 
@@ -15,15 +16,23 @@ export default function LedgerList() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(null); // null | { item? }
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await partyApi.list({ search: search || undefined });
-      setRows(Array.isArray(data) ? data : []);
+      const { data } = await partyApi.list({ page, limit, search: search || undefined });
+      setRows(data.items || []);
+      setTotal(data.total || 0);
+      setPages(data.pages || 1);
     } catch { toast({ title: 'Failed to load parties', variant: 'error' }); }
     finally { setLoading(false); }
-  }, [search]);
+  }, [page, limit, search]);
+
+  useEffect(() => { setPage(1); }, [search, limit]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -73,7 +82,7 @@ export default function LedgerList() {
             ) : rows.map((r, idx) => (
               <tr key={r._id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 cursor-pointer"
                 onClick={() => navigate(`/ledger/party-id/${r._id}`)}>
-                <td className="py-3 px-4 text-gray-500">{idx + 1}</td>
+                <td className="py-3 px-4 text-gray-500">{(page - 1) * limit + idx + 1}</td>
                 <td className="py-3 px-4 font-medium text-gray-800 underline underline-offset-2 hover:text-primary">{r.partyName}</td>
                 <td className="py-3 px-4 text-gray-500">{r.phone || '-'}</td>
                 <td className="py-3 px-4 text-right text-green-700">{formatCurrency(r.totalDebit || 0)}</td>
@@ -94,6 +103,8 @@ export default function LedgerList() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} pages={pages} total={total} limit={limit} onPage={setPage} onLimit={setLimit} />
 
       {modal && (
         <PartyModal

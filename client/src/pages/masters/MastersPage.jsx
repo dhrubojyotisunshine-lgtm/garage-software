@@ -5,6 +5,7 @@ import { useToast } from '../../components/ui/Toast';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import Pagination from '../../components/ui/Pagination';
 
 const MASTER_TABS = [
   { key: 'jobcard-types', label: 'Jobcard Types', fields: [{ name: 'name', label: 'Type Name', required: true }] },
@@ -36,6 +37,8 @@ function MasterTable({ entity, tab, makes }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState({});
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const { toast } = useToast();
 
   const load = async () => {
@@ -82,6 +85,11 @@ function MasterTable({ entity, tab, makes }) {
   const filtered = items.filter(i => i.name?.toLowerCase().includes(search.toLowerCase()));
   const getMakeName = (makeId) => makes.find(m => m._id === makeId)?.name || '-';
 
+  const totalRows  = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / limit));
+  const paged      = filtered.slice((page - 1) * limit, page * limit);
+  useEffect(() => { setPage(1); }, [search, entity, limit]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -103,6 +111,7 @@ function MasterTable({ entity, tab, makes }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-border">
+              <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sr No</th>
               <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</th>
               {entity === 'vehicle-models' && <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Make</th>}
               {entity === 'jobcard-statuses' && <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Category</th>}
@@ -112,10 +121,11 @@ function MasterTable({ entity, tab, makes }) {
           <tbody>
             {loading ? (
               <tr><td colSpan={10} className="text-center py-8 text-gray-400">Loading...</td></tr>
-            ) : filtered.length === 0 ? (
+            ) : paged.length === 0 ? (
               <tr><td colSpan={10} className="text-center py-8 text-gray-400">No items found</td></tr>
-            ) : filtered.map(item => (
+            ) : paged.map((item, idx) => (
               <tr key={item._id} className="border-b border-border hover:bg-gray-50 last:border-0">
+                <td className="py-3 px-4 text-gray-500">{(page - 1) * limit + idx + 1}</td>
                 <td className="py-3 px-4 font-medium text-gray-800">{item.name}</td>
                 {entity === 'vehicle-models' && <td className="py-3 px-4 text-gray-500">{getMakeName(item.makeId)}</td>}
                 {entity === 'jobcard-statuses' && (
@@ -134,6 +144,8 @@ function MasterTable({ entity, tab, makes }) {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} pages={totalPages} total={totalRows} limit={limit} onPage={setPage} onLimit={setLimit} />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)}
         title={editItem ? `Edit ${tab.label.replace(/s$/, '')}` : `Add ${tab.label.replace(/s$/, '')}`}>

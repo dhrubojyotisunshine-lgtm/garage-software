@@ -15,7 +15,7 @@ export default function PartySelect({ selectedName, selectedPhone, onSelect }) {
   // Refetch each time the dropdown opens so newly added parties show up.
   useEffect(() => {
     if (!open) return;
-    partyApi.list().then(({ data }) => setParties(data)).catch(() => {});
+    partyApi.list({ all: 1 }).then(({ data }) => setParties(data.items || [])).catch(() => {});
   }, [open]);
 
   useEffect(() => {

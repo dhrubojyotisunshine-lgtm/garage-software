@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Pencil, Trash2, X, ChevronDown, Download, Upload } from 'lucide-react';
 import { inventoryApi } from '../../api/inventory';
+import Pagination from '../../components/ui/Pagination';
 import { useToast } from '../../components/ui/Toast';
 import useAuthStore from '../../store/authStore';
 
@@ -578,6 +579,8 @@ export default function StockPage() {
   const [search, setSearch] = useState('');
   const [vehicleSearch, setVehicleSearch] = useState('');
   const [qtyFilter, setQtyFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [makes, setMakes] = useState([]);
   const [modal, setModal] = useState(null); // null | { type: 'spare'|'lube'|'job'|'group', item? }
   const [importing, setImporting] = useState(false);
@@ -587,11 +590,11 @@ export default function StockPage() {
   const SAMPLE_CSVS = {
     spares: {
       filename: 'sample_spares.csv',
-      content: 'name,partNumber,company,unit,subCategory,purchasePrice,sellingPrice,currentStock,lowerLimit,rackNumber\nOil Filter,OIL-001,Bosch,units,Frequent Items,150,250,10,2,A1\nAir Filter,AIR-002,Mann,units,Regular,80,150,5,1,A2'
+      content: 'name,partNumber,company,unit,subCategory,purchasePrice,sellingPrice,addStock,lowerLimit,rackNumber\nOil Filter,OIL-001,Bosch,units,Frequent Items,150,250,10,2,A1\nAir Filter,AIR-002,Mann,units,Regular,80,150,5,1,A2'
     },
     lubes: {
       filename: 'sample_lubes.csv',
-      content: 'name,partNumber,company,unit,purchasePrice,sellingPrice,currentStock,lowerLimit,rackNumber\nEngine Oil 5W30,LUB-001,Castrol,ltr,350,500,20,5,B1\nGear Oil 80W90,LUB-002,Shell,ltr,200,320,10,3,B2'
+      content: 'name,partNumber,company,unit,purchasePrice,sellingPrice,addStock,lowerLimit,rackNumber\nEngine Oil 5W30,LUB-001,Castrol,ltr,350,500,20,5,B1\nGear Oil 80W90,LUB-002,Shell,ltr,200,320,10,3,B2'
     },
     jobs: {
       filename: 'sample_jobs.csv',
@@ -620,11 +623,14 @@ export default function StockPage() {
     const s = String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
+  // Header aliases: the CSV column is named `addStock`, but the value still comes
+  // from the item's `currentStock` field (matches the sample + import header).
+  const HEADER_ALIAS = { currentStock: 'addStock' };
   const exportCSV = () => {
     const cols = EXPORT_COLS[activeTab];
     if (!cols) return;
     if (!filtered.length) return toast({ title: 'Nothing to export', variant: 'error' });
-    const lines = [cols.join(',')];
+    const lines = [cols.map(c => HEADER_ALIAS[c] || c).join(',')];
     filtered.forEach(it => lines.push(cols.map(c => csvCell(it[c])).join(',')));
     const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -641,7 +647,10 @@ export default function StockPage() {
     try {
       const importers = { spares: inventoryApi.importSpares, lubes: inventoryApi.importLubes, jobs: inventoryApi.importJobs };
       const { data } = await importers[activeTab](file);
-      toast({ title: `Imported ${data.inserted} of ${data.total} rows`, variant: 'success' });
+      const title = data.updated != null
+        ? `Imported: ${data.inserted} new, ${data.updated} stock-updated (of ${data.total})`
+        : `Imported ${data.inserted} of ${data.total} rows`;
+      toast({ title, variant: 'success' });
       loadItems(); loadStats();
     } catch (e) {
       toast({ title: 'Import failed', description: e.response?.data?.message || e.message, variant: 'error' });
@@ -698,6 +707,12 @@ export default function StockPage() {
     if (qtyFilter === 'zero') return (item.currentStock || 0) === 0;
     return true;
   });
+
+  const totalFiltered = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / limit));
+  const paged = filtered.slice((page - 1) * limit, page * limit);
+
+  useEffect(() => { setPage(1); }, [search, vehicleSearch, qtyFilter, activeTab, limit]);
 
   const tabConfig = [
     { key: 'spares', label: 'Spare',  color: 'red',    stat: stats.spares,  modalType: 'spare'  },
@@ -815,6 +830,7 @@ export default function StockPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
+              <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sr No</th>
               {activeTab !== 'groups' ? (
                 <>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -844,11 +860,12 @@ export default function StockPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={10} className="text-center py-10 text-gray-400">Loading...</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={10} className="text-center py-10 text-gray-400">No items found</td></tr>
-            ) : filtered.map(item => (
+              <tr><td colSpan={11} className="text-center py-10 text-gray-400">Loading...</td></tr>
+            ) : paged.length === 0 ? (
+              <tr><td colSpan={11} className="text-center py-10 text-gray-400">No items found</td></tr>
+            ) : paged.map((item, idx) => (
               <tr key={item._id} className="border-b border-gray-100 hover:bg-gray-50 last:border-0">
+                <td className="py-3 px-4 text-gray-500">{(page - 1) * limit + idx + 1}</td>
                 {activeTab !== 'groups' ? (
                   <>
                     <td className="py-3 px-4 font-medium text-gray-800">
@@ -910,6 +927,8 @@ export default function StockPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} pages={totalPages} total={totalFiltered} limit={limit} onPage={setPage} onLimit={setLimit} />
 
       {/* Modals */}
       {modal?.type === 'spare' && <SpareModal item={modal.item} onClose={() => setModal(null)} onSaved={onSaved} makes={makes} />}

@@ -3,6 +3,7 @@ import { DateField } from '../../components/ui/DateField';
 import { useNavigate } from 'react-router-dom';
 import { Search, Pencil, X, Plus } from 'lucide-react';
 import { estimatesApi } from '../../api/estimates';
+import Pagination from '../../components/ui/Pagination';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { useToast } from '../../components/ui/Toast';
@@ -13,23 +14,27 @@ export default function EstimatesPage() {
   const { toast } = useToast();
   const [estimates, setEstimates] = useState([]);
   const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [date, setDate] = useState('');
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
 
   const loadEstimates = async () => {
     setLoading(true);
     try {
-      const { data } = await estimatesApi.list({ search, date, page, limit: 20 });
+      const { data } = await estimatesApi.list({ search, date, page, limit });
       setEstimates(data.estimates);
       setTotal(data.total);
+      setPages(data.pages || 1);
     } catch {
       toast({ title: 'Failed to load estimates', variant: 'error' });
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { loadEstimates(); }, [search, date, page]);
+  useEffect(() => { loadEstimates(); }, [search, date, page, limit]);
+  useEffect(() => { setPage(1); }, [search, date, limit]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this estimate?')) return;
@@ -82,18 +87,19 @@ export default function EstimatesPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-gray-50">
-              {['Date', 'Estimate Number', 'Customer Name', 'Vehicle Number', 'Total Amount', 'Estimate Status', 'Action'].map(h => (
+              {['Sr No', 'Date', 'Estimate Number', 'Customer Name', 'Vehicle Number', 'Total Amount', 'Estimate Status', 'Action'].map(h => (
                 <th key={h} className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-400">Loading…</td></tr>
             ) : estimates.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-400">No estimates found</td></tr>
-            ) : estimates.map(est => (
+              <tr><td colSpan={8} className="text-center py-12 text-gray-400">No estimates found</td></tr>
+            ) : estimates.map((est, idx) => (
               <tr key={est._id} className="border-b border-border last:border-0 hover:bg-gray-50">
+                <td className="py-3 px-4 text-gray-500">{(page - 1) * limit + idx + 1}</td>
                 <td className="py-3 px-4 text-gray-600">{formatDate(est.estimateDate)}</td>
                 <td className="py-3 px-4">
                   <button onClick={() => navigate(`/estimate/${est._id}`)} className="font-mono font-medium text-gray-800 underline underline-offset-2 hover:text-primary">
@@ -122,16 +128,7 @@ export default function EstimatesPage() {
         </table>
       </div>
 
-      {/* Pagination */}
-      {total > 20 && (
-        <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
-          <span>Showing {Math.min((page - 1) * 20 + 1, total)}–{Math.min(page * 20, total)} of {total}</span>
-          <div className="flex gap-2">
-            <button onClick={() => setPage(p => p - 1)} disabled={page === 1} className="px-3 py-1.5 border border-border rounded-lg disabled:opacity-40 hover:bg-gray-50">Prev</button>
-            <button onClick={() => setPage(p => p + 1)} disabled={page * 20 >= total} className="px-3 py-1.5 border border-border rounded-lg disabled:opacity-40 hover:bg-gray-50">Next</button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} pages={pages} total={total} limit={limit} onPage={setPage} onLimit={setLimit} />
     </div>
   );
 }

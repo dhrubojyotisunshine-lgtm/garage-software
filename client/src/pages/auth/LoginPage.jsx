@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Wrench, Eye, EyeOff, ArrowRight, Building2, Users } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
+import { firstAllowedPath } from '../../components/Layout/Sidebar';
 import { useToast } from '../../components/ui/Toast';
 
 const garageSchema = z.object({
@@ -46,7 +47,9 @@ export default function LoginPage() {
     const result = await staffLogin(staffForm);
     if (result.success) {
       toast({ title: 'Welcome!', variant: 'success' });
-      navigate('/dashboard');
+      // Staff may not have Dashboard access — land them on their first allowed menu.
+      const menuAccess = useAuthStore.getState().staffUser?.roleId?.menuAccess;
+      navigate(firstAllowedPath(menuAccess));
     } else {
       toast({ title: 'Login failed', description: result.message, variant: 'error' });
     }

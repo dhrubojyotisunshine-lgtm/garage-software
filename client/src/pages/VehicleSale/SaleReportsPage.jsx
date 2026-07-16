@@ -6,6 +6,7 @@ import { useToast } from '../../components/ui/Toast';
 import { DateField } from '../../components/ui/DateField';
 import { formatCurrency, formatDate } from '../../utils/format';
 import useAuthStore from '../../store/authStore';
+import Pagination from '../../components/ui/Pagination';
 
 const selectCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary';
 const labelCls = 'block text-sm font-medium text-gray-600 mb-1';
@@ -49,14 +50,19 @@ export default function SaleReportsPage() {
   const [stock, setStock] = useState([]);
   const [filters, setFilters] = useState({ ...EMPTY, dealer: dealerName });
   const [applied, setApplied] = useState(null);
+  const [repPage, setRepPage] = useState(1);
+  const [repLimit, setRepLimit] = useState(20);
+
+  // Reset to page 1 whenever a new report is generated or page size changes.
+  useEffect(() => { setRepPage(1); }, [applied, repLimit]);
 
   const set = (k, v) => setFilters(f => ({ ...f, [k]: v }));
 
   const loadData = useCallback(async () => {
     try {
-      const [s, st] = await Promise.all([vehicleSaleApi.list(), vehicleStockApi.list()]);
-      setSales(Array.isArray(s.data) ? s.data : []);
-      setStock(Array.isArray(st.data) ? st.data : []);
+      const [s, st] = await Promise.all([vehicleSaleApi.list({ all: 1 }), vehicleStockApi.list({ all: 1 })]);
+      setSales(Array.isArray(s.data.items) ? s.data.items : []);
+      setStock(Array.isArray(st.data.items) ? st.data.items : []);
     } catch { toast({ title: 'Failed to load report data', variant: 'error' }); }
   }, []);
 
@@ -165,7 +171,8 @@ export default function SaleReportsPage() {
   const exportCSV = () => {
     if (!report || !report.rows.length) return toast({ title: 'Nothing to export', variant: 'error' });
     const lines = [report.cols.join(','), ...report.rows.map(r => r.map(csvCell).join(','))];
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    // Prepend UTF-8 BOM so Excel reads ₹ and other non-ASCII correctly (else "₹" → "â‚¹")
+    const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = `${report.type}-report-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
@@ -272,15 +279,24 @@ export default function SaleReportsPage() {
               <tbody>
                 {report.rows.length === 0 ? (
                   <tr><td colSpan={report.cols.length + 1} className="text-center py-12 text-gray-400">No records match the filters</td></tr>
-                ) : report.rows.map((r, i) => (
-                  <tr key={i} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                    <td className="py-3 px-4 text-gray-500">{i + 1}</td>
+                ) : report.rows.slice((repPage - 1) * repLimit, repPage * repLimit).map((r, i) => (
+                  <tr key={(repPage - 1) * repLimit + i} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                    <td className="py-3 px-4 text-gray-500">{(repPage - 1) * repLimit + i + 1}</td>
                     {r.map((c, j) => <td key={j} className="py-3 px-4 text-gray-700 whitespace-nowrap">{c}</td>)}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            page={repPage}
+            pages={Math.max(1, Math.ceil(report.rows.length / repLimit))}
+            total={report.rows.length}
+            limit={repLimit}
+            onPage={setRepPage}
+            onLimit={setRepLimit}
+          />
         </div>
       )}
     </div>
