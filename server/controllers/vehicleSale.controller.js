@@ -86,6 +86,12 @@ exports.addPayment = async (req, res) => {
     const amount = Number(req.body.amount);
     if (!amount || amount <= 0) return res.status(400).json({ message: 'A valid payment amount is required.' });
 
+    // Block overpayment — a payment can bring the balance to 0 but never below.
+    const paidSoFar = (sale.payment.advancePaid || 0) + sale.payments.reduce((s, p) => s + (p.amount || 0), 0);
+    const remaining = (sale.payment.netPayable || 0) - paidSoFar;
+    if (remaining <= 0) return res.status(400).json({ message: 'This sale is already fully paid.' });
+    if (amount > remaining) return res.status(400).json({ message: `Payment exceeds remaining balance (₹${remaining.toLocaleString('en-IN')}).` });
+
     sale.payments.push({
       amount,
       date: req.body.date ? new Date(req.body.date) : new Date(),

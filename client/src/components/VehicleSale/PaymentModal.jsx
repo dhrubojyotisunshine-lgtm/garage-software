@@ -22,6 +22,8 @@ export default function PaymentModal({ sale, onClose, onSaved }) {
   const handleSave = async () => {
     const amt = Number(form.amount);
     if (!amt || amt <= 0) { setError('Enter a valid payment amount.'); return; }
+    if (balance <= 0) { setError('This sale is already fully paid.'); return; }
+    if (amt > balance) { setError(`Payment exceeds remaining balance (${formatCurrency(balance)}).`); return; }
     setError('');
     setSaving(true);
     try {
@@ -52,7 +54,7 @@ export default function PaymentModal({ sale, onClose, onSaved }) {
 
           <div>
             <label className={labelCls}>Amount <span className="text-red-500">*</span></label>
-            <input type="number" className={inputCls} value={form.amount} onChange={e => set('amount', e.target.value)} />
+            <input type="number" min="0" max={balance > 0 ? balance : undefined} className={inputCls} value={form.amount} onChange={e => set('amount', e.target.value)} />
             {error && <p className="text-red-500 text-xs mt-0.5">{error}</p>}
           </div>
           <div className="grid grid-cols-2 gap-4">
