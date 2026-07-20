@@ -109,15 +109,15 @@ const create = async (req, res) => {
     const body = sanitizePayload(req.body);
 
     if (body.vehicleNo) {
-      const openJc = await Jobcard.findOne({
+      const activeJc = await Jobcard.findOne({
         garageId: req.garage._id,
-        vehicleNo: body.vehicleNo,
-        statusCategory: 'Open',
+        vehicleNo: new RegExp(`^${String(body.vehicleNo).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+        statusCategory: { $in: ['Open', 'Completed'] }, // anything not Closed
         deletedAt: { $exists: false }
       });
-      if (openJc) {
+      if (activeJc) {
         return res.status(409).json({
-          message: `Jobcard #${openJc.jobcardNumber} is already open for vehicle ${body.vehicleNo}. Close it before creating a new one.`
+          message: `Jobcard #${activeJc.jobcardNumber} for vehicle ${body.vehicleNo} is not closed yet. Close it before creating a new one.`
         });
       }
     }

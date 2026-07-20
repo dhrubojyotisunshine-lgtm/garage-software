@@ -31,7 +31,7 @@ export default function CustomersPage() {
 
   // New customer modal
   const [showNewModal, setShowNewModal] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', customerType: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '' });
+  const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', customerType: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '', color: '' });
   const [vehicleMakes, setVehicleMakes] = useState([]);
   const [vehicleModels, setVehicleModels] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -81,12 +81,13 @@ export default function CustomersPage() {
           makeName: newCustomer.makeName,
           modelName: newCustomer.modelName,
           engineNo: newCustomer.engineNo,
-          chassisNo: newCustomer.chassisNo
+          chassisNo: newCustomer.chassisNo,
+          color: newCustomer.color
         }] : []
       });
       toast({ title: 'Customer added', variant: 'success' });
       setShowNewModal(false);
-      setNewCustomer({ name: '', mobile: '', customerType: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '' });
+      setNewCustomer({ name: '', mobile: '', customerType: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '', color: '' });
       load();
     } catch (e) {
       toast({ title: 'Failed to add customer', description: e.response?.data?.message, variant: 'error' });
@@ -278,6 +279,10 @@ export default function CustomersPage() {
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Chassis No.</label>
               <input value={newCustomer.chassisNo} onChange={e => set('chassisNo', e.target.value.toUpperCase())} className={inputCls} placeholder="Chassis number" />
+            </div>
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Colour</label>
+              <input value={newCustomer.color} onChange={e => set('color', e.target.value)} className={inputCls} placeholder="e.g. White, Black, Red" />
             </div>
           </div>
           <div className="flex justify-end gap-3">

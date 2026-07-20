@@ -81,11 +81,32 @@ const search = async (req, res) => {
 
 const isValidMobile = (m) => /^[6-9]\d{9}$/.test(String(m || '').trim());
 
+// Registration number (vehicleNo) must be unique across customers in a garage.
+// Returns the first conflicting registration, or null. `excludeId` skips the
+// customer being edited so updating their own vehicle doesn't false-trigger.
+const findDuplicateReg = async (garageId, vehicles, excludeId) => {
+  for (const v of vehicles || []) {
+    const reg = (v?.vehicleNo || '').trim();
+    if (!reg) continue;
+    const q = {
+      garageId,
+      deletedAt: { $exists: false },
+      'vehicles.vehicleNo': new RegExp(`^${reg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+    };
+    if (excludeId) q._id = { $ne: excludeId };
+    if (await Customer.exists(q)) return reg;
+  }
+  return null;
+};
+
 const create = async (req, res) => {
   try {
     if (!isValidMobile(req.body.mobile)) {
       return res.status(400).json({ message: 'Enter a valid 10-digit mobile number starting with 6-9' });
     }
+    const dupReg = await findDuplicateReg(req.garage._id, req.body.vehicles, null);
+    if (dupReg) return res.status(400).json({ message: `Vehicle registration ${dupReg} is already registered to another customer.` });
+
     const customer = await Customer.create({ ...req.body, garageId: req.garage._id });
     res.status(201).json(customer);
   } catch (error) {
@@ -98,6 +119,9 @@ const update = async (req, res) => {
     if (req.body.mobile !== undefined && !isValidMobile(req.body.mobile)) {
       return res.status(400).json({ message: 'Enter a valid 10-digit mobile number starting with 6-9' });
     }
+    const dupReg = await findDuplicateReg(req.garage._id, req.body.vehicles, req.params.id);
+    if (dupReg) return res.status(400).json({ message: `Vehicle registration ${dupReg} is already registered to another customer.` });
+
     const customer = await Customer.findOneAndUpdate(
       { _id: req.params.id, garageId: req.garage._id },
       req.body,

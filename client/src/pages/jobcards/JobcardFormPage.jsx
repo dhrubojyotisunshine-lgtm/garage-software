@@ -63,7 +63,7 @@ export default function JobcardFormPage() {
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', customerType: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '' });
+  const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', customerType: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '', color: '' });
 
   // Form state
   const [form, setForm] = useState({
@@ -231,13 +231,13 @@ export default function JobcardFormPage() {
   // Detect open jobcard for selected vehicle
   useEffect(() => {
     if (isEdit || !selectedVehicle?.vehicleNo) { setOpenJobcardWarning(null); return; }
-    jobcardsApi.list({ status: 'open', vehicleNoExact: selectedVehicle.vehicleNo, limit: 1 })
+    jobcardsApi.list({ vehicleNoExact: selectedVehicle.vehicleNo, limit: 20 })
       .then(({ data }) => {
         const match = (data.jobcards || []).find(
-          jc => jc.vehicleNo?.toUpperCase() === selectedVehicle.vehicleNo.toUpperCase() && jc.statusCategory === 'Open'
+          jc => jc.vehicleNo?.toUpperCase() === selectedVehicle.vehicleNo.toUpperCase() && jc.statusCategory !== 'Closed'
         );
         setOpenJobcardWarning(match
-          ? `Jobcard #${match.jobcardNumber} is already open for vehicle ${selectedVehicle.vehicleNo}. Close it before creating a new one.`
+          ? `Jobcard #${match.jobcardNumber} for vehicle ${selectedVehicle.vehicleNo} is not closed yet. Close it before creating a new one.`
           : null
         );
       })
@@ -712,12 +712,6 @@ export default function JobcardFormPage() {
               <label className="text-xs font-medium text-gray-500 mb-1 block">KM Reading</label>
               <input type="number" value={form.kmReading} onChange={e => setField('kmReading', e.target.value)} className={inputCls} placeholder="e.g. 12500" />
             </div>
-            {s.vehicleColour && (
-              <div>
-                <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Colour</label>
-                <input value={form.vehicleColour} onChange={e => setField('vehicleColour', e.target.value)} className={inputCls} placeholder="e.g. White" />
-              </div>
-            )}
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Fuel Level: {form.fuelLevel}%</label>
               <input
@@ -1365,13 +1359,14 @@ export default function JobcardFormPage() {
                   makeName: newCustomer.makeName,
                   modelName: newCustomer.modelName,
                   engineNo: newCustomer.engineNo,
-                  chassisNo: newCustomer.chassisNo
+                  chassisNo: newCustomer.chassisNo,
+                  color: newCustomer.color
                 }] : []
               });
               setSelectedCustomer(data);
               setSelectedVehicle(data.vehicles?.[0] || null);
               setShowNewCustomerModal(false);
-              setNewCustomer({ name: '', mobile: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '' });
+              setNewCustomer({ name: '', mobile: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '', color: '' });
               toast({ title: 'Customer added', variant: 'success' });
             } catch (e) {
               toast({ title: 'Failed to add customer', description: e.response?.data?.message, variant: 'error' });
@@ -1522,6 +1517,10 @@ function NewCustomerForm({ value, onChange, makes, models, onSave, onClose }) {
         <div>
           <label className="text-xs font-medium text-gray-500 mb-1 block">Chassis No.</label>
           <input value={value.chassisNo || ''} onChange={e => set('chassisNo', e.target.value.toUpperCase())} className={inputCls} placeholder="Chassis number" />
+        </div>
+        <div className="col-span-2">
+          <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Colour</label>
+          <input value={value.color || ''} onChange={e => set('color', e.target.value)} className={inputCls} placeholder="e.g. White, Black, Red" />
         </div>
       </div>
       <div className="flex justify-end gap-3">

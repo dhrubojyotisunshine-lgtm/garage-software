@@ -35,7 +35,7 @@ export default function EstimateFormPage() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '' });
+  const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '', color: '' });
 
   // Form
   const [form, setForm] = useState({
@@ -524,12 +524,12 @@ export default function EstimateFormPage() {
               const { data } = await customersApi.create({
                 name: newCustomer.name,
                 mobile: newCustomer.mobile,
-                vehicles: newCustomer.vehicleNo ? [{ vehicleNo: newCustomer.vehicleNo, make: newCustomer.makeId, model: newCustomer.modelId, makeName: newCustomer.makeName, modelName: newCustomer.modelName, engineNo: newCustomer.engineNo, chassisNo: newCustomer.chassisNo }] : []
+                vehicles: newCustomer.vehicleNo ? [{ vehicleNo: newCustomer.vehicleNo, make: newCustomer.makeId, model: newCustomer.modelId, makeName: newCustomer.makeName, modelName: newCustomer.modelName, engineNo: newCustomer.engineNo, chassisNo: newCustomer.chassisNo, color: newCustomer.color }] : []
               });
               setSelectedCustomer(data);
               setSelectedVehicle(data.vehicles?.[0] || null);
               setShowNewCustomerModal(false);
-              setNewCustomer({ name: '', mobile: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '' });
+              setNewCustomer({ name: '', mobile: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '', color: '' });
               toast({ title: 'Customer added', variant: 'success' });
             } catch (e) {
               toast({ title: 'Failed to add customer', description: e.response?.data?.message, variant: 'error' });
@@ -599,6 +599,10 @@ function NewCustomerForm({ value, onChange, makes, models, onSave, onClose }) {
         <div>
           <label className="text-xs font-medium text-gray-500 mb-1 block">Chassis No.</label>
           <input value={value.chassisNo || ''} onChange={e => set('chassisNo', e.target.value.toUpperCase())} className={inputCls} placeholder="Chassis number" />
+        </div>
+        <div className="col-span-2">
+          <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Colour</label>
+          <input value={value.color || ''} onChange={e => set('color', e.target.value)} className={inputCls} placeholder="e.g. White, Black, Red" />
         </div>
       </div>
       <div className="flex justify-end gap-3">

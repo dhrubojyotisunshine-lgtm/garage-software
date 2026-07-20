@@ -8,6 +8,7 @@ const vehicleSchema = new mongoose.Schema({
   vehicleNo: String,
   engineNo:  String,
   chassisNo: String,
+  color:     String,
   year:      Number
 });
 
