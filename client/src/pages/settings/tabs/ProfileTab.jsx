@@ -3,6 +3,7 @@ import { Camera, ChevronDown, ChevronUp } from 'lucide-react';
 import useAuthStore from '../../../store/authStore';
 import { settingsApi } from '../../../api/settings';
 import { useToast } from '../../../components/ui/Toast';
+import { assetUrl } from '../../../utils/asset';
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
@@ -35,7 +36,7 @@ function ImageUploadBox({ label, field, imageUrl, onUploaded }) {
         <div className="w-20 h-20 rounded-xl border-2 border-dashed border-border bg-gray-50 flex items-center justify-center overflow-hidden">
           {imageUrl ? (
             <img
-              src={imageUrl}
+              src={assetUrl(imageUrl)}
               alt={label}
               className="w-full h-full object-contain"
             />

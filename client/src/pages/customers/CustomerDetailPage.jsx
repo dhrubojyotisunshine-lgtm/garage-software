@@ -9,6 +9,7 @@ import {
 import { customersApi } from '../../api/customers';
 import { useToast } from '../../components/ui/Toast';
 import { getInitials } from '../../utils/format';
+import CustomerEditModal from '../../components/CustomerEditModal';
 
 const STATUS_OPTIONS = ['Lead', 'Active', 'VIP', 'Inactive'];
 const STATUS_CONFIG  = {
@@ -55,6 +56,7 @@ export default function CustomerDetailPage() {
   const [followUpDate, setFUDate]     = useState('');
   const [followUpNote, setFUNote]     = useState('');
   const [savingFU, setSavingFU]       = useState(false);
+  const [editOpen, setEditOpen]       = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -167,6 +169,11 @@ export default function CustomerDetailPage() {
                   </div>
                 )}
               </div>
+
+              <button onClick={() => setEditOpen(true)}
+                className="ml-auto flex items-center gap-1.5 text-sm text-primary border border-primary/30 px-3 py-1.5 rounded-lg hover:bg-primary/5">
+                <Edit2 size={13} /> Edit
+              </button>
             </div>
 
             <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-500">
@@ -356,6 +363,14 @@ export default function CustomerDetailPage() {
           </div>
         </div>
       </div>
+
+      {editOpen && (
+        <CustomerEditModal
+          customer={customer}
+          onClose={() => setEditOpen(false)}
+          onSaved={() => { setEditOpen(false); load(); }}
+        />
+      )}
     </div>
   );
 }

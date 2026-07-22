@@ -9,6 +9,8 @@ const vehicleStockSchema = new mongoose.Schema({
   chassisNumber: { type: String, default: '' },
   engineNumber:  { type: String, default: '' },
   qty:           { type: Number, default: 1 },
+  inDate:        { type: Date },              // when the vehicle arrived at the showroom
+  dealerName:    { type: String, default: '' }, // whom it came from
   garageId:      { type: mongoose.Schema.Types.ObjectId, ref: 'Garage', required: true },
   active:        { type: Boolean, default: true }
 }, { timestamps: true });

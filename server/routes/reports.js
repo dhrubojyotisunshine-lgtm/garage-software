@@ -90,6 +90,7 @@ router.get('/', async (req, res) => {
           date: j.createdAt,
           closedDate: j.statusCategory === 'Closed' ? j.updatedAt : null,
           jobcardNumber: j.jobcardNumber,
+          typeLabel: j.typeLabel || '',
           customerName: j.customerName || '',
           customerMobile: j.customerMobile || '',
           customerEmail: j.customerEmail || '',

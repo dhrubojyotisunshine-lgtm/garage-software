@@ -1,3 +1,5 @@
+import { assetUrl } from '../../utils/asset';
+
 // Shared TTN-style tax-invoice / estimate print layout.
 // Matches the Reckon Motors reference: header (logo + workshop/GSTN/addr/phone/email),
 // Bill To | Vehicle | Doc details, GST item table (18% inclusive split),
@@ -38,7 +40,7 @@ export default function TaxInvoiceDoc({
   garage, title, number, billTo, vehicleRows = [], metaLabel, metaRows = [],
   items = [], customerVoice = [], advice = [], summary = {}, footerNote, paymentStatus, reminder,
 }) {
-  const logo = garage?.branding?.logoUrl || garage?.logoUrl || null;
+  const logo = assetUrl(garage?.branding?.logoUrl || garage?.logoUrl) || null;
   const garageAddress = [garage?.address, garage?.city, garage?.state, garage?.zipcode].filter(Boolean).join(', ');
 
   // GST split (inclusive)

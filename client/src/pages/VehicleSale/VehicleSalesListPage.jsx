@@ -49,7 +49,7 @@ export default function VehicleSalesListPage() {
     } catch { toast({ title: 'Delete failed', variant: 'error' }); }
   };
 
-  const cols = ['Sr No', 'Invoice No.', 'Date', 'Customer', 'Vehicles', 'Net Payable', 'Advance Paid', 'Balance Amount', 'Status', 'Action'];
+  const cols = ['Sr No', 'Invoice No.', 'Date', 'Customer', 'Vehicles', 'Vehicle Price', 'Net Payable', 'Advance Paid', 'Balance Amount', 'Status', 'Action'];
 
   return (
     <div>
@@ -100,6 +100,7 @@ export default function VehicleSalesListPage() {
                   <div className="text-xs text-gray-400">{s.customer?.mobile || '-'}</div>
                 </td>
                 <td className="py-3 px-4 text-gray-500">{s.vehicles?.length || 0}</td>
+                <td className="py-3 px-4 text-gray-700 whitespace-nowrap">{formatCurrency(s.payment?.showroomPrice ?? s.payment?.grossAmount ?? 0)}</td>
                 <td className="py-3 px-4 text-gray-800 font-medium whitespace-nowrap">{formatCurrency(s.payment?.netPayable || 0)}</td>
                 <td className="py-3 px-4 text-gray-700 whitespace-nowrap">{formatCurrency(s.payment?.advancePaid || 0)}</td>
                 <td className="py-3 px-4 text-gray-800 font-medium whitespace-nowrap">{formatCurrency(s.payment?.balanceAmount || 0)}</td>

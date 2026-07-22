@@ -60,24 +60,24 @@ async function dedupeImport(Model, garageId, docs, codeField) {
   return { fresh, skipped };
 }
 
-// Stock import (spares/lubes): ADD the CSV stock to existing parts (matched by code),
-// and create new parts. Rows in the same file sharing a code have their stock summed.
+// Stock import (spares/lubes): OVERWRITE the stock of existing parts (matched by code)
+// with the CSV value, and create new parts. If the same code appears more than once in
+// the file, the last row's value wins.
 async function upsertStockImport(Model, garageId, docs, codeField) {
   const byCode = new Map();
   for (const d of docs) {
     const key = (d[codeField] || '').trim().toLowerCase();
-    if (byCode.has(key)) byCode.get(key).addQty += (d.currentStock || 0);
-    else byCode.set(key, { doc: d, addQty: d.currentStock || 0 });
+    byCode.set(key, { doc: d, setQty: d.currentStock || 0 }); // last row wins
   }
   const existing = await Model.find({ garageId, active: { $ne: false } }, codeField).lean();
   const existingMap = new Map(existing.map(e => [(e[codeField] || '').trim().toLowerCase(), e._id]));
 
   const toInsert = [];
   const updates = [];
-  for (const [key, { doc, addQty }] of byCode) {
+  for (const [key, { doc, setQty }] of byCode) {
     const id = existingMap.get(key);
-    if (id) updates.push({ updateOne: { filter: { _id: id }, update: { $inc: { currentStock: addQty } } } });
-    else toInsert.push(doc); // doc.currentStock already equals addQty → initial stock
+    if (id) updates.push({ updateOne: { filter: { _id: id }, update: { $set: { currentStock: setQty } } } });
+    else toInsert.push(doc); // doc.currentStock already equals setQty → initial stock
   }
 
   let inserted = 0, updated = 0;

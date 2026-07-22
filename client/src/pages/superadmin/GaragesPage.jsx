@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Plus, X, CheckCircle, XCircle, Eye, EyeOff, Settings, GripVertical, Camera, RotateCcw, KeyRound, Copy, Check, RefreshCw } from 'lucide-react';
+import { Search, Plus, X, CheckCircle, XCircle, Eye, EyeOff, Settings, GripVertical, Camera, RotateCcw, KeyRound, Copy, Check, RefreshCw, LogIn } from 'lucide-react';
 import { superAdminApi } from '../../api/superAdmin';
 import { useToast } from '../../components/ui/Toast';
+import { assetUrl } from '../../utils/asset';
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
@@ -302,7 +303,7 @@ function GarageManageModal({ garage, onClose, onSaved }) {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const logoRef = useRef();
 
-  const logoSrc = logoUrl || null;
+  const logoSrc = logoUrl ? assetUrl(logoUrl) : null;
 
   const handleLogoFile = async (e) => {
     const file = e.target.files[0];
@@ -538,6 +539,22 @@ export default function GaragesPage() {
   const [credGarage, setCred]     = useState(null);
   const [togglingId, setToggling] = useState(null);
   const [resetPwGarage, setResetPw] = useState(null);
+  const [loginId, setLoginId] = useState(null);
+
+  // Log in as (impersonate) a franchise: store its token and open the garage app.
+  // The super-admin session (ttn_sa_token) stays intact so we can return.
+  const handleLoginAs = async (g) => {
+    setLoginId(String(g._id));
+    try {
+      const { data } = await superAdminApi.loginAsGarage(g._id);
+      localStorage.setItem('ttn_token', data.token);
+      localStorage.setItem('ttn_impersonating', g.workshopName || 'Franchise');
+      window.location.href = '/dashboard';
+    } catch (e) {
+      toast({ title: e?.response?.data?.message || 'Failed to log in as franchise', variant: 'error' });
+      setLoginId(null);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -596,14 +613,14 @@ export default function GaragesPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
-              {['Workshop Name','Owner','Mobile','City','Status','Created','Credentials','Reset Pw','Action','Manage'].map(h => (
+              {['Workshop Name','Owner','Mobile','City','Status','Created','Credentials','Reset Pw','Action','Manage','Login'].map(h => (
                 <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={10} className="text-center py-10 text-gray-400">Loading...</td></tr>}
-            {!loading && garages.length === 0 && <tr><td colSpan={10} className="text-center py-10 text-gray-400">No franchises found</td></tr>}
+            {loading && <tr><td colSpan={11} className="text-center py-10 text-gray-400">Loading...</td></tr>}
+            {!loading && garages.length === 0 && <tr><td colSpan={11} className="text-center py-10 text-gray-400">No franchises found</td></tr>}
             {garages.map(g => (
               <tr key={String(g._id)} className="border-t border-gray-100 hover:bg-gray-50">
                 <td className="px-5 py-3 font-medium text-gray-800">{g.workshopName}</td>
@@ -648,6 +665,14 @@ export default function GaragesPage() {
                     onClick={() => setManage(g)}
                     className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
                     <Settings size={12} /> Manage
+                  </button>
+                </td>
+                <td className="px-5 py-3">
+                  <button
+                    disabled={loginId === String(g._id)}
+                    onClick={() => handleLoginAs(g)}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium border border-green-200 text-green-700 hover:bg-green-50 transition-colors disabled:opacity-50">
+                    <LogIn size={12} /> {loginId === String(g._id) ? '...' : 'Login'}
                   </button>
                 </td>
               </tr>

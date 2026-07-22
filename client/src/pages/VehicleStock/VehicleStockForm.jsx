@@ -7,7 +7,7 @@ import { vehicleStockApi } from '../../api/vehicleStockApi';
 
 const cellCls = 'w-full border border-border rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white';
 
-const emptyRow = () => ({ vehicleModel: '', variant: '', color: '', chassisNumber: '', engineNumber: '', qty: 1 });
+const emptyRow = () => ({ vehicleModel: '', variant: '', color: '', chassisNumber: '', engineNumber: '', qty: 1, inDate: '', dealerName: '' });
 
 export default function VehicleStockForm() {
   const { id } = useParams();
@@ -25,7 +25,8 @@ export default function VehicleStockForm() {
     vehicleStockApi.get(id)
       .then(({ data }) => setRows([{
         vehicleModel: data.vehicleModel || '', variant: data.variant || '', color: data.color || '',
-        chassisNumber: data.chassisNumber || '', engineNumber: data.engineNumber || '', qty: data.qty ?? 1
+        chassisNumber: data.chassisNumber || '', engineNumber: data.engineNumber || '', qty: data.qty ?? 1,
+        inDate: data.inDate ? String(data.inDate).slice(0, 10) : '', dealerName: data.dealerName || ''
       }]))
       .catch(() => toast({ title: 'Failed to load stock', variant: 'error' }))
       .finally(() => setLoading(false));
@@ -36,12 +37,13 @@ export default function VehicleStockForm() {
   const removeRow = (idx) => setRows(rs => rs.filter((_, i) => i !== idx));
 
   const handleSave = async () => {
-    const filled = rows.filter(r => r.vehicleModel.trim());
+    // 1 stock = 1 physical vehicle (unique chassis / engine no.) → qty is always 1.
+    const filled = rows.filter(r => r.vehicleModel.trim()).map(r => ({ ...r, qty: 1 }));
     if (filled.length === 0) { setError('Add at least one vehicle with a Vehicle Model.'); return; }
     setError('');
     setSaving(true);
     try {
-      if (isEdit) await vehicleStockApi.update(id, rows[0]);
+      if (isEdit) await vehicleStockApi.update(id, { ...rows[0], qty: 1 });
       else        await vehicleStockApi.createMany(filled);
       toast({ title: isEdit ? 'Stock updated' : 'Stock saved', variant: 'success' });
       navigate('/vehicle-stock');
@@ -52,7 +54,7 @@ export default function VehicleStockForm() {
 
   if (loading) return <div className="py-16 text-center text-gray-400">Loading…</div>;
 
-  const cols = ['#', 'Vehicle Model *', 'Variant Name', 'Color', 'Chassis Number', 'Engine Number', 'Qty', ''];
+  const cols = ['#', 'Vehicle Model *', 'Variant Name', 'Color', 'Chassis Number', 'Engine Number', 'In Date', 'Dealer Name', 'Qty', ''];
 
   return (
     <div>
@@ -77,7 +79,7 @@ export default function VehicleStockForm() {
           <Boxes size={15} className="text-primary" /> Vehicle Details
         </h3>
         <div className="overflow-x-auto -mx-2">
-          <table className="w-full text-sm min-w-[800px]">
+          <table className="w-full text-sm min-w-[1000px]">
             <thead>
               <tr className="border-b border-border bg-gray-50">
                 {cols.map((h, i) => (
@@ -94,7 +96,11 @@ export default function VehicleStockForm() {
                   <td className="py-2 px-2"><input className={cellCls} value={r.color} onChange={e => updateRow(idx, 'color', e.target.value)} /></td>
                   <td className="py-2 px-2"><input className={cellCls} value={r.chassisNumber} onChange={e => updateRow(idx, 'chassisNumber', e.target.value)} /></td>
                   <td className="py-2 px-2"><input className={cellCls} value={r.engineNumber} onChange={e => updateRow(idx, 'engineNumber', e.target.value)} /></td>
-                  <td className="py-2 px-2 w-24"><input type="number" min="0" className={cellCls} value={r.qty} onChange={e => updateRow(idx, 'qty', e.target.value)} /></td>
+                  <td className="py-2 px-2 w-36"><input type="date" className={cellCls} value={r.inDate} onChange={e => updateRow(idx, 'inDate', e.target.value)} /></td>
+                  <td className="py-2 px-2"><input className={cellCls} value={r.dealerName} onChange={e => updateRow(idx, 'dealerName', e.target.value)} placeholder="Dealer / from whom" /></td>
+                  <td className="py-2 px-2 w-20"><input type="number" readOnly value={1}
+                    title="Each vehicle is a unique stock — quantity is fixed to 1."
+                    className={`${cellCls} bg-gray-100 text-gray-500 cursor-not-allowed`} /></td>
                   <td className="py-2 px-2">
                     {!isEdit && (
                       <button onClick={() => removeRow(idx)} disabled={rows.length === 1}

@@ -32,7 +32,7 @@ export default function Step3Vehicle({ form, setForm, setTop, errors }) {
 
   useEffect(() => {
     if (!open) return;
-    vehicleStockApi.list({ all: 1 }).then(({ data }) => setStock(listItems(data))).catch(() => {});
+    vehicleStockApi.list({ all: 1, stock: 'available' }).then(({ data }) => setStock(listItems(data))).catch(() => {});
   }, [open]);
 
   useEffect(() => {
@@ -174,6 +174,19 @@ export default function Step3Vehicle({ form, setForm, setTop, errors }) {
           </Field>
           <Field label="Expected Delivery Date">
             <DateField value={form.deliveryDate} onChange={e => setTop('deliveryDate', e.target.value)} className={`${inputCls} w-full`} />
+          </Field>
+          <Field label="Invoice No.">
+            <input className={`${inputCls} bg-gray-50 text-gray-500`} value={form.invoiceNo || ''} readOnly placeholder="Auto-generated on save" />
+          </Field>
+          <Field label="Sale Type" required error={errors['saleType']}>
+            <select className={inputCls} value={form.saleType} onChange={e => setTop('saleType', e.target.value)}>
+              <option value="Cash">Cash</option>
+              <option value="Finance">Finance</option>
+              <option value="Exchange">Exchange</option>
+            </select>
+          </Field>
+          <Field label="Enter Financer">
+            <input className={inputCls} value={form.salesExecutive} onChange={e => setTop('salesExecutive', e.target.value)} placeholder="Enter Financer" />
           </Field>
         </div>
       </SectionCard>

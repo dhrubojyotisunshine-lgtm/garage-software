@@ -320,6 +320,17 @@ router.patch('/garages/:id/toggle', superAdminProtect, async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+/* ── Log in as (impersonate) a garage — returns a garage token ── */
+router.post('/garages/:id/login', superAdminProtect, async (req, res) => {
+  try {
+    const garage = await Garage.findById(req.params.id).select('-password -otp -otpExpiry');
+    if (!garage) return res.status(404).json({ message: 'Franchise not found' });
+    if (garage.active === false) return res.status(403).json({ message: 'This franchise is deactivated.' });
+    const token = jwt.sign({ id: garage._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
+    res.json({ token, garage });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 /* ── Single garage stats ───────────────────────────────────── */
 router.get('/garages/:id/stats', superAdminProtect, async (req, res) => {
   try {

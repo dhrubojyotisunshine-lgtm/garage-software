@@ -8,8 +8,13 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('ttn_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  // Don't overwrite an Authorization header that a caller set explicitly
+  // (e.g. super-admin requests use their own ttn_sa_token). Only fall back to
+  // the garage/staff token when no auth header is already present.
+  if (!config.headers.Authorization && !config.headers.authorization) {
+    const token = localStorage.getItem('ttn_token');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 

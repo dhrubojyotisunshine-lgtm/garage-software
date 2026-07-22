@@ -5,6 +5,7 @@ import { vehicleStockApi } from '../../api/vehicleStockApi';
 import { useToast } from '../../components/ui/Toast';
 import Pagination from '../../components/ui/Pagination';
 import { listItems, listTotal, listPages } from '../../utils/list';
+import { formatDate } from '../../utils/format';
 
 export default function VehicleStockList() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function VehicleStockList() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [stockFilter, setStockFilter] = useState('available'); // 'available' | 'used' | 'all'
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
@@ -20,18 +22,24 @@ export default function VehicleStockList() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await vehicleStockApi.list({ page, limit, search: search || undefined });
+      const { data } = await vehicleStockApi.list({ page, limit, search: search || undefined, stock: stockFilter });
       setRows(listItems(data));
       setTotal(listTotal(data));
       setPages(listPages(data));
     } catch { toast({ title: 'Failed to load stock', variant: 'error' }); }
     finally { setLoading(false); }
-  }, [page, limit, search]);
+  }, [page, limit, search, stockFilter]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Reset to page 1 whenever the search or page size changes.
-  useEffect(() => { setPage(1); }, [search, limit]);
+  // Reset to page 1 whenever the search, filter or page size changes.
+  useEffect(() => { setPage(1); }, [search, stockFilter, limit]);
+
+  const STOCK_TABS = [
+    { key: 'available', label: 'Available Stock' },
+    { key: 'used',      label: 'Used Stock' },
+    { key: 'all',       label: 'All' },
+  ];
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this stock record?')) return;
@@ -42,7 +50,7 @@ export default function VehicleStockList() {
     } catch { toast({ title: 'Delete failed', variant: 'error' }); }
   };
 
-  const cols = ['Sr No', 'Vehicle Model', 'Variant', 'Color', 'Chassis Number', 'Engine Number', 'Qty', 'Used', 'Remaining', 'Action'];
+  const cols = ['Sr No', 'Vehicle Model', 'Variant', 'Color', 'Chassis Number', 'Engine Number', 'In Date', 'Dealer Name', 'Qty', 'Used', 'Remaining', 'Action'];
 
   return (
     <div>
@@ -54,12 +62,24 @@ export default function VehicleStockList() {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="relative mb-4 max-w-lg">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Search by Model, Variant, Color, Chassis or Engine No."
-          className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+      {/* Search + stock filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+        <div className="relative flex-1 max-w-lg">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search by Model, Variant, Color, Chassis or Engine No."
+            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
+        <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+          {STOCK_TABS.map(t => (
+            <button key={t.key} onClick={() => setStockFilter(t.key)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                stockFilter === t.key ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Table */}
@@ -85,6 +105,8 @@ export default function VehicleStockList() {
                 <td className="py-3 px-4 text-gray-700">{r.color || '-'}</td>
                 <td className="py-3 px-4 text-gray-500 text-xs">{r.chassisNumber || '-'}</td>
                 <td className="py-3 px-4 text-gray-500 text-xs">{r.engineNumber || '-'}</td>
+                <td className="py-3 px-4 text-gray-600 text-xs whitespace-nowrap">{r.inDate ? formatDate(r.inDate) : '-'}</td>
+                <td className="py-3 px-4 text-gray-700">{r.dealerName || '-'}</td>
                 <td className="py-3 px-4 text-gray-800 font-medium">{r.qty}</td>
                 <td className="py-3 px-4 text-gray-600">{r.used ?? 0}</td>
                 <td className="py-3 px-4">

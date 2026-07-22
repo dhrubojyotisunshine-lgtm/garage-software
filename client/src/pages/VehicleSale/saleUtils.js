@@ -13,12 +13,14 @@ export const emptyVehicle = () => ({
   price: 0, insurance: 0, rto: 0, total: 0
 });
 
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
 export const emptySale = () => ({
   dealer: { name: '', address: '', phone: '', email: '', gstin: '' },
   invoiceNo: '', saleDate: '', saleType: 'Cash', salesExecutive: '',
   customer: { name: '', mobile: '', address: '', email: '', pan: '', aadhar: '' },
   vehicles: [emptyVehicle()],
-  bookingNo: '', bookingDate: '', deliveryDate: '',
+  bookingNo: '', bookingDate: todayStr(), deliveryDate: '',
   billing: { exShowroom: 0, gst: 0, tcs: 0, accessories: 0, subtotal: 0, netVehicleAmount: 0 },
   insurance: {
     company: '',
@@ -28,7 +30,7 @@ export const emptySale = () => ({
   rto: { registrationCharges: 0, registrationFee: 0, totalRto: 0 },
   payment: {
     grossAmount: 0, totalDiscount: 0, netPayable: 0, advancePaid: 0, balanceAmount: 0, totalPaid: 0,
-    paymentMode: '', amount: 0, transactionId: '', paymentDate: '', paymentStatus: 'Pending'
+    paymentMode: '', amount: 0, transactionId: '', paymentDate: todayStr(), paymentStatus: 'Pending'
   },
   payments: [],
   narration: '', remark: ''
@@ -65,13 +67,13 @@ export function computeDerived(form) {
 export function validateStep(step, form) {
   const e = {};
   if (step === 0) {
-    // Invoice number is auto-generated on save, so it is not validated here.
-    if (!form.saleDate) e['saleDate'] = 'Sale Date is required.';
-    if (!form.saleType) e['saleType'] = 'Sale Type is required.';
+    // Dealer/Showroom details are auto-filled — nothing to validate here.
   } else if (step === 1) {
     if (!form.customer?.name?.trim()) e['customer.name'] = 'Customer Name is required.';
     if (!form.customer?.mobile?.trim()) e['customer.mobile'] = 'Mobile Number is required.';
   } else if (step === 2) {
+    // Sale Type + Booking details live on this step now (Invoice is auto-generated).
+    if (!form.saleType) e['saleType'] = 'Sale Type is required.';
     if (!form.vehicles?.length) e['vehicles'] = 'Add at least one vehicle.';
     else {
       const first = form.vehicles[0];

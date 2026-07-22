@@ -153,10 +153,11 @@ export default function SaleReportsPage() {
     // Sales report (default)
     return {
       type: 'sales',
-      cols: ['Invoice No.', 'Date', 'Customer', 'Vehicles', 'Net Payable', 'Total Paid', 'Balance', 'Status'],
+      cols: ['Invoice No.', 'Date', 'Customer', 'Vehicles', 'Vehicle Price', 'Net Payable', 'Total Paid', 'Balance', 'Status'],
       rows: filteredSales.map(s => [
         s.invoiceNo, formatDate(s.saleDate), s.customer?.name || '-',
         (s.vehicles || []).map(v => v.vehicleModel).filter(Boolean).join(', ') || '-',
+        formatCurrency(s.payment?.showroomPrice ?? s.payment?.grossAmount),
         formatCurrency(s.payment?.netPayable), formatCurrency(s.payment?.totalPaid || s.payment?.advancePaid),
         formatCurrency(s.payment?.balanceAmount), s.payment?.paymentStatus || 'Pending'
       ]),

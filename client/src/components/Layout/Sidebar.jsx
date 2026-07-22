@@ -6,17 +6,26 @@ import {
   Database, Settings, ChevronDown, ChevronRight, Wrench, Users, UserCircle, BellRing, Car, ScrollText
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { assetUrl } from '../../utils/asset';
 import useAuthStore from '../../store/authStore';
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 const ALL_NAV = [
   { key: 'dashboard',    label: 'Dashboard',    icon: LayoutDashboard, path: '/dashboard' },
+  { key: 'appointment',  label: 'Appointment',  icon: Calendar,        path: '/appointment' },
+  { key: 'customers',    label: 'Customers',    icon: UserCircle,      path: '/customers' },
+  {
+    key: 'sale', label: 'Vehicle Sale', icon: Car, path: '/sale/vehicle-sales',
+    children: [
+      { label: 'Vehicle Sales',    path: '/sale/vehicle-sales' },
+      { label: 'Sale Reports',     path: '/sale/reports' },
+      { label: 'Stock Management', path: '/vehicle-stock' }
+    ]
+  },
+  { key: 'estimate',     label: 'Estimate',     icon: FileSpreadsheet, path: '/estimate' },
   { key: 'jobcards',     label: 'Jobcards',     icon: FileText,        path: '/jobcards' },
-  { key: 'reminders',   label: 'Reminders',    icon: BellRing,        path: '/reminders' },
-  { key: 'customers',   label: 'Customers',    icon: UserCircle,      path: '/customers' },
-  { key: 'estimate',    label: 'Estimate',     icon: FileSpreadsheet, path: '/estimate' },
-  { key: 'counter-sale',label: 'Counter-Sale', icon: ShoppingCart,    path: '/counter-sale' },
+  { key: 'counter-sale', label: 'Counter-Sale', icon: ShoppingCart,    path: '/counter-sale' },
   {
     key: 'inventory', label: 'Inventory', icon: Package, path: '/inventory',
     children: [
@@ -26,22 +35,14 @@ const ALL_NAV = [
       { label: 'History',        path: '/inventory/history' }
     ]
   },
-  {
-    key: 'sale', label: 'Vehicle Sale', icon: Car, path: '/sale/vehicle-sales',
-    children: [
-      { label: 'Vehicle Sales',    path: '/sale/vehicle-sales' },
-      { label: 'Sale Reports',     path: '/sale/reports' },
-      { label: 'Stock Management', path: '/vehicle-stock' }
-    ]
-  },
+  { key: 'cashbook',    label: 'Cashbook',    icon: BookOpen,   path: '/cashbook' },
   { key: 'ledger',      label: 'Ledger',      icon: ScrollText, path: '/ledger' },
   { key: 'reports',     label: 'Reports',     icon: BarChart2,  path: '/reports' },
-  { key: 'cashbook',    label: 'Cashbook',    icon: BookOpen,   path: '/cashbook' },
-  { key: 'appointment', label: 'Appointment', icon: Calendar,   path: '/appointment' },
-  // { key: 'expenses',    label: 'Expenses',    icon: CreditCard, path: '/expenses' }, // hidden per request
-  { key: 'masters',     label: 'Masters',     icon: Database,   path: '/masters' },
+  { key: 'reminders',   label: 'Reminders',   icon: BellRing,   path: '/reminders' },
   { key: 'staff',       label: 'Staff',       icon: Users,      path: '/staff' },
+  { key: 'masters',     label: 'Masters',     icon: Database,   path: '/masters' },
   { key: 'settings',    label: 'Settings',    icon: Settings,   path: '/settings' },
+  // { key: 'expenses',    label: 'Expenses',    icon: CreditCard, path: '/expenses' }, // hidden per request
 ];
 
 // Landing path for a staff member: first menu (in nav order) they have access to.
@@ -63,24 +64,18 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onNavigate })
       const allowed = staffUser.roleId.menuAccess;
       return ALL_NAV.filter(n => allowed.includes(n.key));
     }
-    // Garage owner: apply menuConfig ordering/visibility
+    // Garage owner: ALL_NAV drives the ORDER; menuConfig only hides items.
+    // (An explicitly disabled item in menuConfig is removed; everything else — including
+    // items not present in the config, e.g. newly added modules — stays visible.)
     const cfg = garage?.menuConfig;
     if (!cfg || cfg.length === 0) return ALL_NAV;
-    const sorted = [...cfg].sort((a, b) => a.order - b.order);
-    const configured = sorted
-      .filter(c => c.enabled)
-      .map(c => ALL_NAV.find(n => n.key === c.key))
-      .filter(Boolean);
-    // Append any nav items not present in the saved menuConfig (e.g. newly added
-    // modules) so they remain visible without altering existing order/visibility.
-    const coveredKeys = new Set(cfg.map(c => c.key));
-    const extras = ALL_NAV.filter(n => !coveredKeys.has(n.key));
-    return [...configured, ...extras];
+    const hidden = new Set(cfg.filter(c => c.enabled === false).map(c => c.key));
+    return ALL_NAV.filter(n => !hidden.has(n.key));
   }, [garage?.menuConfig, isStaff, staffUser]);
 
   // Brand logo (super-admin branding logo, else workshop logo)
   const rawLogo = garage?.branding?.logoUrl || garage?.logoUrl;
-  const logoUrl = rawLogo || null;
+  const logoUrl = rawLogo ? assetUrl(rawLogo) : null;
 
   useEffect(() => {
     ALL_NAV.forEach(item => {

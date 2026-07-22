@@ -10,6 +10,7 @@ const staffRoleSchema = new mongoose.Schema({
     canChangeStatus: { type: Boolean, default: false },
     canAddItems:     { type: Boolean, default: false },
     canAddPayment:   { type: Boolean, default: false },
+    canApplyDiscount:{ type: Boolean, default: false },
     canDelete:       { type: Boolean, default: false },
   },
   stockPermissions: {

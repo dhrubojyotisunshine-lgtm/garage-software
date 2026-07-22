@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { jobcardsApi } from '../../api/jobcards';
 import useAuthStore from '../../store/authStore';
+import { assetUrl } from '../../utils/asset';
 
 const HEAD = '#BDD7EE';
 const BORDER = '#111111';
@@ -15,11 +16,9 @@ const fmtTime = (t) => { if (!t) return null; const [h, m] = t.split(':'); const
 const th = (extra = {}) => ({ border: `1px solid ${BORDER}`, padding: '6px 8px', fontSize: 11, fontWeight: 700, background: HEAD, textAlign: 'left', ...extra });
 const td = (extra = {}) => ({ border: `1px solid ${BORDER}`, padding: '7px 8px', fontSize: 11, verticalAlign: 'top', ...extra });
 
-// Pad an array of item rows up to `min` blank rows so the mechanic has space to write.
-function padRows(items, min) {
-  const rows = items.map(it => ({ name: it.name || '', mechanic: it.mechanicName || '' }));
-  while (rows.length < min) rows.push({ name: '', mechanic: '' });
-  return rows;
+// Only the actual item rows — no blank padding.
+function padRows(items) {
+  return items.map(it => ({ name: it.name || '', mechanic: it.mechanicName || '' }));
 }
 
 export default function WorksheetPage() {
@@ -61,11 +60,11 @@ export default function WorksheetPage() {
   if (err) return <div style={{ padding: 40, fontFamily: 'sans-serif', color: '#C62828', textAlign: 'center', marginTop: 80 }}>⚠ {err}</div>;
   if (!jc || !garage) return <div style={{ padding: 40, fontFamily: 'sans-serif', color: '#94a3b8', textAlign: 'center', marginTop: 80 }}>Loading worksheet…</div>;
 
-  const logo = garage.branding?.logoUrl || garage.logoUrl || null;
+  const logo = assetUrl(garage.branding?.logoUrl || garage.logoUrl) || null;
   const garageAddress = [garage.address, garage.city, garage.state, garage.zipcode].filter(Boolean).join(', ');
 
-  const particulars = padRows((jc.items || []).filter(i => i.itemType === 'Spare' || i.itemType === 'Lube' || i.itemType === 'Outsource'), 5);
-  const labour = padRows((jc.items || []).filter(i => i.itemType === 'Labour'), 6);
+  const particulars = padRows((jc.items || []).filter(i => i.itemType === 'Spare' || i.itemType === 'Lube' || i.itemType === 'Outsource'));
+  const labour = padRows((jc.items || []).filter(i => i.itemType === 'Labour'));
 
   const readyBy = (() => {
     const dp = jc.deliveryDate ? fmtDate(jc.deliveryDate) : '';

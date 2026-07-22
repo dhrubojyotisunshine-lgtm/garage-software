@@ -244,16 +244,19 @@ export default function JobcardFormPage() {
       .catch(() => {});
   }, [selectedVehicle, isEdit]);
 
-  // Item search
+  // Item search — spans all item types (Jobs + Spare + Lube) so a part can be found
+  // regardless of the active tab. Each result carries its own _type.
   useEffect(() => {
     if (itemSearch.length < 1) { setItemSearchResults([]); return; }
-    const list = activeItemTab === 'Labour' ? labourItems : activeItemTab === 'Spare' ? spareItems : lubeItems;
-    const filtered = list.filter(i =>
-      i.name.toLowerCase().includes(itemSearch.toLowerCase()) ||
-      (i.jobCode || i.partNumber || '').toLowerCase().includes(itemSearch.toLowerCase())
+    const q = itemSearch.toLowerCase();
+    const tag = (arr, t) => arr.map(i => ({ ...i, _type: t }));
+    const all = [...tag(labourItems, 'Labour'), ...tag(spareItems, 'Spare'), ...tag(lubeItems, 'Lube')];
+    const filtered = all.filter(i =>
+      i.name.toLowerCase().includes(q) ||
+      (i.jobCode || i.partNumber || '').toLowerCase().includes(q)
     );
-    setItemSearchResults(filtered.slice(0, 10));
-  }, [itemSearch, activeItemTab, labourItems, spareItems, lubeItems]);
+    setItemSearchResults(filtered.slice(0, 12));
+  }, [itemSearch, labourItems, spareItems, lubeItems]);
 
   const setField = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -283,7 +286,10 @@ export default function JobcardFormPage() {
   const addItem = (masterItem) => {
     setItemSearch('');
     setItemSearchResults([]);
-    const existingIdx = form.items.findIndex(i => String(i.itemId) === String(masterItem._id) && i.itemType === activeItemTab);
+    // Cross-type search: use the item's own type (falls back to the active tab).
+    const itemType = masterItem._type || activeItemTab;
+    if (itemType !== activeItemTab) setActiveItemTab(itemType);
+    const existingIdx = form.items.findIndex(i => String(i.itemId) === String(masterItem._id) && i.itemType === itemType);
     if (existingIdx >= 0) {
       const updated = [...form.items];
       updated[existingIdx] = { ...updated[existingIdx], qty: updated[existingIdx].qty + 1, finalAmount: (updated[existingIdx].qty + 1) * updated[existingIdx].unitPrice };
@@ -291,7 +297,7 @@ export default function JobcardFormPage() {
     } else {
       setField('items', [...form.items, {
         itemId: masterItem._id,
-        itemType: activeItemTab,
+        itemType: itemType,
         name: masterItem.name,
         partNumber: masterItem.partNumber || masterItem.jobCode || '',
         qty: 1,
@@ -980,10 +986,22 @@ export default function JobcardFormPage() {
                     className="w-full text-left px-4 py-2.5 hover:bg-gray-50 border-b border-border last:border-0 flex justify-between items-center"
                   >
                     <div>
-                      <div className="font-medium text-sm text-gray-800">{item.name}</div>
+                      <div className="font-medium text-sm text-gray-800 flex items-center gap-2">
+                        {item.name}
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${item._type === 'Labour' ? 'bg-green-100 text-green-700' : item._type === 'Spare' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                          {item._type === 'Labour' ? 'Jobs' : item._type}
+                        </span>
+                      </div>
                       <div className="text-xs text-gray-400">{item.jobCode || item.partNumber || ''}</div>
                     </div>
-                    <span className="text-sm font-semibold text-gray-700">₹{item.unitPrice}</span>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      {(item._type === 'Spare' || item._type === 'Lube') && (
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${(item.currentStock || 0) <= 0 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'}`}>
+                          Stock: {item.currentStock ?? 0}
+                        </span>
+                      )}
+                      <span className="text-sm font-semibold text-gray-700">₹{item.unitPrice}</span>
+                    </div>
                   </button>
                 ))}
                 {itemSearchResults.length === 0 && (
@@ -1084,6 +1102,11 @@ export default function JobcardFormPage() {
                   </div>
                 ))}
                 <div className="border-t border-border pt-2 mt-2">
+                  {/* Discount — needs the "Apply / edit discount" permission AND the current
+                      status's allowDiscount flag (defaults to showing only for Completed). */}
+                  {perm('canApplyDiscount')
+                    && (jobcardStatuses.find(s => s._id === form.status)?.allowDiscount ?? (form.statusCategory === 'Completed'))
+                    && (
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-sm text-gray-600">Discount</span>
                     <div className="flex border border-border rounded-lg overflow-hidden text-xs ml-auto">
@@ -1105,6 +1128,7 @@ export default function JobcardFormPage() {
                       min={0}
                     />
                   </div>
+                  )}
                   <div className="flex justify-between text-base font-bold text-gray-800">
                     <span>Bill Amount</span><span className="text-primary">{formatCurrency(totals.billAmount)}</span>
                   </div>
@@ -1228,17 +1252,12 @@ export default function JobcardFormPage() {
               </Button>
             )}
 
-            {form.statusCategory === 'Open' && perm('canChangeStatus') && (() => {
-              // Require at least some payment before completing (only when there's a bill).
-              const needsPayment = totals.billAmount > 0 && totals.paidAmount <= 0;
-              return (
-                <Button disabled={saving || needsPayment} className="!bg-amber-500 !text-white hover:!bg-amber-600"
-                  title={needsPayment ? 'Record a payment before completing this jobcard' : undefined}
-                  onClick={() => changeStatusTo('Completed', 'Jobcard completed')}>
-                  <CheckCircle size={14} /> Complete Jobcard
-                </Button>
-              );
-            })()}
+            {form.statusCategory === 'Open' && perm('canChangeStatus') && (
+              <Button disabled={saving} className="!bg-amber-500 !text-white hover:!bg-amber-600"
+                onClick={() => changeStatusTo('Completed', 'Jobcard completed')}>
+                <CheckCircle size={14} /> Complete Jobcard
+              </Button>
+            )}
 
             {form.statusCategory === 'Completed' && perm('canChangeStatus') && (
               <Button disabled={saving} className="!bg-green-600 !text-white hover:!bg-green-700"
@@ -1498,7 +1517,7 @@ function NewCustomerForm({ value, onChange, makes, models, onSave, onClose }) {
           <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Number</label>
           <input value={value.vehicleNo} onChange={e => set('vehicleNo', e.target.value.toUpperCase())} className={inputCls} placeholder="e.g. MH50AB1234" />
         </div>
-        <div className="col-span-2">
+        <div>
           <label className="text-xs font-medium text-gray-500 mb-1 block">Brand &amp; Model</label>
           <VehicleModelPicker
             makes={makes}
@@ -1511,16 +1530,16 @@ function NewCustomerForm({ value, onChange, makes, models, onSave, onClose }) {
           />
         </div>
         <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Colour</label>
+          <input value={value.color || ''} onChange={e => set('color', e.target.value)} className={inputCls} placeholder="e.g. White, Black, Red" />
+        </div>
+        <div>
           <label className="text-xs font-medium text-gray-500 mb-1 block">Engine No.</label>
           <input value={value.engineNo || ''} onChange={e => set('engineNo', e.target.value.toUpperCase())} className={inputCls} placeholder="Engine number" />
         </div>
         <div>
           <label className="text-xs font-medium text-gray-500 mb-1 block">Chassis No.</label>
           <input value={value.chassisNo || ''} onChange={e => set('chassisNo', e.target.value.toUpperCase())} className={inputCls} placeholder="Chassis number" />
-        </div>
-        <div className="col-span-2">
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Colour</label>
-          <input value={value.color || ''} onChange={e => set('color', e.target.value)} className={inputCls} placeholder="e.g. White, Black, Red" />
         </div>
       </div>
       <div className="flex justify-end gap-3">

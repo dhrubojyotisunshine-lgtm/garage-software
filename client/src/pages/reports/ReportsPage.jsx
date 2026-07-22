@@ -40,7 +40,7 @@ const DATE_PRESETS = [
 ];
 
 const COLUMNS = {
-  'jobcard-revenue':        ['Date','Close Date','Jobcard #','Customer','Mobile','Vehicle','Chassis','Engine','Make/Model','Mechanic','Supervisor','Spare','Lube','Jobs','Total','Discount','Final','Received','Pending','Payment','Status'],
+  'jobcard-revenue':        ['Date','Close Date','Jobcard #','Service Type','Customer','Mobile','Vehicle','Chassis','Engine','Make/Model','Mechanic','Supervisor','Spare','Lube','Jobs','Total','Discount','Final','Received','Pending','Payment','Status'],
   'counter-sale-revenue':   ['Date','Counter #','Customer','Mobile','Vehicle','Chassis','Engine','Make/Model','Items','Spare','Lube','Total','Received','Pending','Payment'],
   'customer-details':       ['Customer','Mobile','Email','Status','Vehicles','Jobcards','Closed','Sales','Visits','Total Spend','Received','Pending','Today Paid','Avg Ticket','First Visit','Last Visit'],
   'pending-balance':        ['Date','Type','Source #','Customer','Mobile','Vehicle','Total','Paid','Pending','Age (days)'],
@@ -68,7 +68,7 @@ const PIE_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b'];
 /* Row-key order per column — drives CSV export + totals alignment.
    Only defined for the detailed per-record reports. */
 const FIELD_KEYS = {
-  'jobcard-revenue':      ['date','closedDate','jobcardNumber','customerName','customerMobile','vehicleNo','chassisNo','engineNo','vehicleDesc','mechanicName','supervisorName','spareTotal','lubeTotal','labourTotal','total','discount','billAmount','paidAmount','balanceDue','paymentStatus','statusLabel'],
+  'jobcard-revenue':      ['date','closedDate','jobcardNumber','typeLabel','customerName','customerMobile','vehicleNo','chassisNo','engineNo','vehicleDesc','mechanicName','supervisorName','spareTotal','lubeTotal','labourTotal','total','discount','billAmount','paidAmount','balanceDue','paymentStatus','statusLabel'],
   'counter-sale-revenue': ['date','counterNumber','customerName','customerMobile','vehicleNumber','chassisNo','engineNo','vehicleDesc','itemCount','spareTotal','lubeTotal','total','paidAmount','balanceDue','paymentStatus'],
   'customer-details':     ['name','mobile','email','status','vehicleCount','jobCount','closedJobs','saleCount','visits','totalSpend','received','pending','todayPaid','avgTicket','firstVisit','lastVisit'],
   'spare-usages':         ['partNumber','name','totalSold'],
@@ -181,6 +181,7 @@ function renderRow(type, row, i, onDateClick, onOpenSource, onOpenItem) {
         {DateCell}
         <td className={cls}>{row.closedDate ? fmtDate(row.closedDate) : '—'}</td>
         <td className={cls + ' font-medium'}>{row.jobcardNumber}</td>
+        <td className={cls}>{row.typeLabel || '—'}</td>
         <td className={cls}>{row.customerName || '—'}</td>
         <td className={cls}>{row.customerMobile || '—'}</td>
         <td className={cls}>{row.vehicleNo || '—'}</td>

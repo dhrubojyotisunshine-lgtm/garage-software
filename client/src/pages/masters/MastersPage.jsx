@@ -13,7 +13,8 @@ const MASTER_TABS = [
     key: 'jobcard-statuses', label: 'Statuses', fields: [
       { name: 'name', label: 'Status Name', required: true },
       { name: 'category', label: 'Category', type: 'select', options: ['Open', 'Completed', 'Closed'], required: true },
-      { name: 'allowAddTransaction', label: 'Add Transaction', type: 'checkbox', checkboxLabel: 'Show the Add Transaction section for jobcards in this status' }
+      { name: 'allowAddTransaction', label: 'Add Transaction', type: 'checkbox', checkboxLabel: 'Show the Add Transaction section for jobcards in this status' },
+      { name: 'allowDiscount', label: 'Discount', type: 'checkbox', checkboxLabel: 'Show the bill Discount control for jobcards in this status' }
     ]
   },
   { key: 'vehicle-makes', label: 'Vehicle Makes', fields: [{ name: 'name', label: 'Make Name', required: true }] },

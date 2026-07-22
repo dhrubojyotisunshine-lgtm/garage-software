@@ -92,6 +92,9 @@ export default function VehicleSaleWizard() {
     setSaving(true);
     try {
       const payload = computeDerived(form);
+      // Sale Date field was removed — the sale date follows the Booking Date
+      // (falls back to today). Existing sales keep their own saleDate.
+      payload.saleDate = payload.saleDate || payload.bookingDate || new Date().toISOString().slice(0, 10);
       if (isEdit) await vehicleSaleApi.update(id, payload);
       else        await vehicleSaleApi.create(payload);
       toast({ title: isEdit ? 'Sale updated' : 'Sale created', variant: 'success' });

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, UserPlus, Car, RefreshCw, ChevronRight,
-  Phone, Clock
+  Phone, Clock, Pencil
 } from 'lucide-react';
 import { customersApi } from '../../api/customers';
 import { mastersApi } from '../../api/masters';
@@ -13,6 +13,7 @@ import { Modal } from '../../components/ui/Modal';
 import { getInitials } from '../../utils/format';
 import { customerFlag } from '../../utils/customerFlag';
 import VehicleModelPicker from '../../components/ui/VehicleModelPicker';
+import CustomerEditModal from '../../components/CustomerEditModal';
 
 function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
 
@@ -31,6 +32,7 @@ export default function CustomersPage() {
 
   // New customer modal
   const [showNewModal, setShowNewModal] = useState(false);
+  const [editCustomer, setEditCustomer] = useState(null);
   const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', customerType: '', vehicleNo: '', makeId: '', makeName: '', modelId: '', modelName: '', engineNo: '', chassisNo: '', color: '' });
   const [vehicleMakes, setVehicleMakes] = useState([]);
   const [vehicleModels, setVehicleModels] = useState([]);
@@ -224,7 +226,13 @@ export default function CustomersPage() {
                     </td>
 
                     <td className="py-3.5 px-5 text-center">
-                      <ChevronRight size={16} className="text-gray-400 mx-auto" />
+                      <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setEditCustomer(c)} title="Edit customer"
+                          className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-400 hover:text-blue-600">
+                          <Pencil size={14} />
+                        </button>
+                        <ChevronRight size={16} className="text-gray-400 cursor-pointer" onClick={() => navigate(`/customers/${c._id}`)} />
+                      </div>
                     </td>
                   </tr>
                 );
@@ -260,7 +268,7 @@ export default function CustomersPage() {
               <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Number</label>
               <input value={newCustomer.vehicleNo} onChange={e => set('vehicleNo', e.target.value.toUpperCase())} className={inputCls} placeholder="e.g. MH50AB1234" />
             </div>
-            <div className="col-span-2">
+            <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Brand &amp; Model</label>
               <VehicleModelPicker
                 makes={vehicleMakes}
@@ -273,16 +281,16 @@ export default function CustomersPage() {
               />
             </div>
             <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Colour</label>
+              <input value={newCustomer.color} onChange={e => set('color', e.target.value)} className={inputCls} placeholder="e.g. White, Black, Red" />
+            </div>
+            <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Engine No.</label>
               <input value={newCustomer.engineNo} onChange={e => set('engineNo', e.target.value.toUpperCase())} className={inputCls} placeholder="Engine number" />
             </div>
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Chassis No.</label>
               <input value={newCustomer.chassisNo} onChange={e => set('chassisNo', e.target.value.toUpperCase())} className={inputCls} placeholder="Chassis number" />
-            </div>
-            <div className="col-span-2">
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Colour</label>
-              <input value={newCustomer.color} onChange={e => set('color', e.target.value)} className={inputCls} placeholder="e.g. White, Black, Red" />
             </div>
           </div>
           <div className="flex justify-end gap-3">
@@ -291,6 +299,14 @@ export default function CustomersPage() {
           </div>
         </div>
       </Modal>
+
+      {editCustomer && (
+        <CustomerEditModal
+          customer={editCustomer}
+          onClose={() => setEditCustomer(null)}
+          onSaved={() => { setEditCustomer(null); load(); }}
+        />
+      )}
     </div>
   );
 }

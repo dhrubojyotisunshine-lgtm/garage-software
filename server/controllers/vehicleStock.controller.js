@@ -9,7 +9,9 @@ function pick(body = {}) {
     color:         body.color || '',
     chassisNumber: body.chassisNumber || '',
     engineNumber:  body.engineNumber || '',
-    qty:           body.qty === '' || body.qty === undefined || body.qty === null ? 1 : Number(body.qty)
+    qty:           body.qty === '' || body.qty === undefined || body.qty === null ? 1 : Number(body.qty),
+    inDate:        body.inDate || undefined,
+    dealerName:    body.dealerName || ''
   };
 }
 
@@ -21,6 +23,11 @@ exports.list = async (req, res) => {
     const { search, all } = req.query;
     const page  = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.max(1, parseInt(req.query.limit, 10) || 20);
+    // Stock filter: 'available' (remaining > 0) | 'used' (remaining <= 0) | 'all'.
+    // Default the list view to 'available'; all=1 callers (sale picker, reports)
+    // stay unfiltered unless they explicitly ask.
+    const stockFilter = req.query.stock || (all ? 'all' : 'available');
+
     const q = { garageId: req.garage._id, active: { $ne: false } };
     if (search && search.trim()) {
       // Multi-term search: every word must appear in at least one field, so
@@ -34,12 +41,9 @@ exports.list = async (req, res) => {
       }));
     }
 
-    const total = await VehicleStock.countDocuments(q);
-    let query = VehicleStock.find(q).sort({ createdAt: -1 });
-    if (!all) query = query.skip((page - 1) * limit).limit(limit);
-    const stock = await query;
-
-    // Used = number of sold vehicles (across active sales) linked to each stock item.
+    // used/remaining depends on a sales aggregation, so it can't be filtered at the
+    // DB level — fetch matching stock, compute remaining, filter, then paginate.
+    const stock = await VehicleStock.find(q).sort({ createdAt: -1 });
     const ids = stock.map(s => s._id);
     const usage = ids.length ? await VehicleSale.aggregate([
       { $match: { garageId: req.garage._id, active: { $ne: false } } },
@@ -49,13 +53,19 @@ exports.list = async (req, res) => {
     ]) : [];
     const usedMap = new Map(usage.map(u => [String(u._id), u.used]));
 
-    const items = stock.map(s => {
+    let items = stock.map(s => {
       const used = usedMap.get(String(s._id)) || 0;
       return { ...s.toObject(), used, remaining: (s.qty || 0) - used };
     });
 
+    if (stockFilter === 'available') items = items.filter(i => i.remaining > 0);
+    else if (stockFilter === 'used')  items = items.filter(i => i.remaining <= 0);
+
+    const total = items.length;
+    const paged = all ? items : items.slice((page - 1) * limit, page * limit);
+
     res.json({
-      items,
+      items: paged,
       total,
       page:  all ? 1 : page,
       pages: all ? 1 : Math.max(1, Math.ceil(total / limit)),

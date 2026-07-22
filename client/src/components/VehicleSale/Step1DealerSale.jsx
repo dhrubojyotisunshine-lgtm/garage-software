@@ -1,8 +1,7 @@
-import { Store, ClipboardList } from 'lucide-react';
-import { DateField } from '../ui/DateField';
+import { Store } from 'lucide-react';
 import { SectionCard, Field, inputCls } from './parts';
 
-export default function Step1DealerSale({ form, setTop, setNested, errors }) {
+export default function Step1DealerSale({ form }) {
   const d = form.dealer;
   const roCls = `${inputCls} bg-gray-50 text-gray-600`;
   return (
@@ -24,27 +23,6 @@ export default function Step1DealerSale({ form, setTop, setNested, errors }) {
           </Field>
           <Field label="GSTIN">
             <input className={roCls} value={d.gstin} readOnly />
-          </Field>
-        </div>
-      </SectionCard>
-
-      <SectionCard title="Sale Information" icon={ClipboardList}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <Field label="Invoice No.">
-            <input className={`${inputCls} bg-gray-50 text-gray-500`} value={form.invoiceNo || ''} readOnly placeholder="Auto-generated on save" />
-          </Field>
-          <Field label="Sale Date" required error={errors['saleDate']}>
-            <DateField value={form.saleDate} onChange={e => setTop('saleDate', e.target.value)} className={`${inputCls} w-full`} />
-          </Field>
-          <Field label="Sale Type" required error={errors['saleType']}>
-            <select className={inputCls} value={form.saleType} onChange={e => setTop('saleType', e.target.value)}>
-              <option value="Cash">Cash</option>
-              <option value="Finance">Finance</option>
-              <option value="Exchange">Exchange</option>
-            </select>
-          </Field>
-          <Field label="Enter Financer">
-            <input className={inputCls} value={form.salesExecutive} onChange={e => setTop('salesExecutive', e.target.value)} placeholder="Enter Financer" />
           </Field>
         </div>
       </SectionCard>

@@ -39,6 +39,7 @@ const JC_PERMISSIONS = [
   { key: 'canChangeStatus', label: 'Change jobcard status' },
   { key: 'canAddItems',     label: 'Add / edit items (jobs, spare, lube)' },
   { key: 'canAddPayment',   label: 'Record payment / advance' },
+  { key: 'canApplyDiscount', label: 'Apply / edit discount' },
   { key: 'canDelete',       label: 'Delete jobcard' },
 ];
 
@@ -62,7 +63,7 @@ const EMPTY_ROLE = {
   menuAccess: ['dashboard', 'jobcards'],
   jobcardPermissions: {
     canCreate: false, canEdit: false, canChangeStatus: false,
-    canAddItems: false, canAddPayment: false, canDelete: false,
+    canAddItems: false, canAddPayment: false, canApplyDiscount: false, canDelete: false,
   },
   stockPermissions: {
     canAdd: false, canEdit: false, canUploadCsv: false,

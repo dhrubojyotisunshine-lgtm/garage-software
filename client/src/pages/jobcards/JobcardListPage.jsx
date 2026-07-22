@@ -202,6 +202,7 @@ export default function JobcardListPage() {
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sr No</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Entry Date</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Service Type</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jobcard No.</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Vehicle No.</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
@@ -213,10 +214,10 @@ export default function JobcardListPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={10} className="text-center py-12 text-gray-400">Loading...</td></tr>
+                <tr><td colSpan={11} className="text-center py-12 text-gray-400">Loading...</td></tr>
               ) : jobcards.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="text-center py-12">
+                  <td colSpan={11} className="text-center py-12">
                     <FileText size={40} className="text-gray-200 mx-auto mb-3" />
                     <p className="text-gray-400 text-sm">No jobcards found</p>
                     <button
@@ -240,6 +241,7 @@ export default function JobcardListPage() {
                       {jc.statusCategory || 'Open'}
                     </Badge>
                   </td>
+                  <td className="py-3 px-4 text-gray-600 text-xs">{jc.typeLabel || '-'}</td>
                   <td className="py-3 px-4 font-medium text-gray-800 font-mono text-xs">{jc.jobcardNumber}</td>
                   <td className="py-3 px-4 text-gray-600 text-xs">{jc.vehicleNo || '-'}</td>
                   <td className="py-3 px-4">

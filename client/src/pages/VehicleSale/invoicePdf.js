@@ -103,7 +103,6 @@ export function downloadInvoicePdf(sale, fallbackGstin = '') {
   [
     `Status: ${pay.paymentStatus || '-'}`,
     `Mode: ${pay.paymentMode || '-'}`,
-    `Amount: ${money(pay.amount)}`,
     `Transaction ID / Ref No: ${pay.transactionId || '-'}`,
     `Payment Date: ${fdate(pay.paymentDate)}`
   ].forEach(l => { doc.text(String(l), M, fy, { maxWidth: pw - 2 * M }); fy += 12; });

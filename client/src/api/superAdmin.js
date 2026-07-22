@@ -11,6 +11,7 @@ export const superAdminApi = {
   createGarage:   (data)    => api.post('/superadmin/garages', data, saHeaders()),
   updateGarage:   (id, data)=> api.put(`/superadmin/garages/${id}`, data, saHeaders()),
   toggleGarage:   (id)      => api.patch(`/superadmin/garages/${id}/toggle`, {}, saHeaders()),
+  loginAsGarage:  (id)      => api.post(`/superadmin/garages/${id}/login`, {}, saHeaders()),
   garageStats:    (id)      => api.get(`/superadmin/garages/${id}/stats`, saHeaders()),
   updateBranding: (id, data)=> api.put(`/superadmin/garages/${id}/branding`, data, saHeaders()),
   updateMenu:     (id, data)=> api.put(`/superadmin/garages/${id}/menu`, data, saHeaders()),

@@ -53,9 +53,6 @@ export default function Step7Payment({ form, setNested, errors }) {
               <option value="Finance">Finance</option>
             </select>
           </Field>
-          <Field label="Amount (₹)">
-            <input type="number" className={inputCls} value={p.amount} onChange={e => setNested('payment', 'amount', e.target.value)} />
-          </Field>
           <Field label="Transaction ID / Ref No.">
             <input className={inputCls} value={p.transactionId} onChange={e => setNested('payment', 'transactionId', e.target.value)} />
           </Field>

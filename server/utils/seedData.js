@@ -8,7 +8,7 @@ const CustomerVoice = require('../models/masters/CustomerVoice');
 const StaffRole = require('../models/masters/StaffRole');
 
 const ALL_MENUS = ['dashboard','jobcards','customers','estimate','counter-sale','inventory','reports','cashbook','appointment','expenses','masters','staff','settings'];
-const ALL_JOBCARD_PERMS = { canCreate: true, canEdit: true, canChangeStatus: true, canAddItems: true, canAddPayment: true, canDelete: true };
+const ALL_JOBCARD_PERMS = { canCreate: true, canEdit: true, canChangeStatus: true, canAddItems: true, canAddPayment: true, canApplyDiscount: true, canDelete: true };
 const ALL_STOCK_PERMS = { canAdd: true, canEdit: true, canUploadCsv: true };
 
 // Default roles seeded for every new garage — Mechanic + Supervisor, both with full permissions

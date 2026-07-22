@@ -81,6 +81,7 @@ const useAuthStore = create((set, get) => ({
 
   logout: () => {
     localStorage.removeItem('ttn_token');
+    localStorage.removeItem('ttn_impersonating');
     set({ token: null, garage: null, isAuthenticated: false, isStaff: false, staffUser: null });
   }
 }));

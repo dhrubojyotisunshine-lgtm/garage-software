@@ -580,7 +580,7 @@ function NewCustomerForm({ value, onChange, makes, models, onSave, onClose }) {
           <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Number</label>
           <input value={value.vehicleNo} onChange={e => set('vehicleNo', e.target.value.toUpperCase())} className={inputCls} placeholder="e.g. MH50AB1234" />
         </div>
-        <div className="col-span-2">
+        <div>
           <label className="text-xs font-medium text-gray-500 mb-1 block">Brand &amp; Model</label>
           <VehicleModelPicker
             makes={makes}
@@ -593,16 +593,16 @@ function NewCustomerForm({ value, onChange, makes, models, onSave, onClose }) {
           />
         </div>
         <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Colour</label>
+          <input value={value.color || ''} onChange={e => set('color', e.target.value)} className={inputCls} placeholder="e.g. White, Black, Red" />
+        </div>
+        <div>
           <label className="text-xs font-medium text-gray-500 mb-1 block">Engine No.</label>
           <input value={value.engineNo || ''} onChange={e => set('engineNo', e.target.value.toUpperCase())} className={inputCls} placeholder="Engine number" />
         </div>
         <div>
           <label className="text-xs font-medium text-gray-500 mb-1 block">Chassis No.</label>
           <input value={value.chassisNo || ''} onChange={e => set('chassisNo', e.target.value.toUpperCase())} className={inputCls} placeholder="Chassis number" />
-        </div>
-        <div className="col-span-2">
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Vehicle Colour</label>
-          <input value={value.color || ''} onChange={e => set('color', e.target.value)} className={inputCls} placeholder="e.g. White, Black, Red" />
         </div>
       </div>
       <div className="flex justify-end gap-3">
