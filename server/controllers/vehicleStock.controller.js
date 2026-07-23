@@ -20,7 +20,7 @@ function pick(body = {}) {
 // { items, total, page, pages, limit }.
 exports.list = async (req, res) => {
   try {
-    const { search, all } = req.query;
+    const { search, all, fromDate, toDate } = req.query;
     const page  = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.max(1, parseInt(req.query.limit, 10) || 20);
     // Stock filter: 'available' (remaining > 0) | 'used' (remaining <= 0) | 'all'.
@@ -33,12 +33,20 @@ exports.list = async (req, res) => {
       // Multi-term search: every word must appear in at least one field, so
       // "activa 110 std" matches model "Activa 110" + variant "std", and
       // "activa white" matches model + color — same behaviour as the sale picker.
-      const fields = ['vehicleModel', 'variant', 'color', 'chassisNumber', 'engineNumber'];
+      const fields = ['vehicleModel', 'variant', 'color', 'chassisNumber', 'engineNumber', 'dealerName'];
       const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const terms = search.trim().split(/\s+/).filter(Boolean);
       q.$and = terms.map(t => ({
         $or: fields.map(f => ({ [f]: { $regex: esc(t), $options: 'i' } }))
       }));
+    }
+
+    // In Date range filter. toDate is inclusive — it covers the whole end day, so
+    // picking the same date for both returns that day's records.
+    if (fromDate || toDate) {
+      q.inDate = {};
+      if (fromDate) q.inDate.$gte = new Date(`${fromDate}T00:00:00.000`);
+      if (toDate)   q.inDate.$lte = new Date(`${toDate}T23:59:59.999`);
     }
 
     // used/remaining depends on a sales aggregation, so it can't be filtered at the

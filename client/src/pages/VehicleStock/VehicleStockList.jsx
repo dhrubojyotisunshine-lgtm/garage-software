@@ -6,6 +6,7 @@ import { useToast } from '../../components/ui/Toast';
 import Pagination from '../../components/ui/Pagination';
 import { listItems, listTotal, listPages } from '../../utils/list';
 import { formatDate } from '../../utils/format';
+import { DateField } from '../../components/ui/DateField';
 
 const csvCell = (v) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 
@@ -16,6 +17,8 @@ export default function VehicleStockList() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [stockFilter, setStockFilter] = useState('available'); // 'available' | 'used' | 'all'
+  const [fromDate, setFromDate] = useState('');   // In Date range (inclusive)
+  const [toDate, setToDate]     = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
@@ -24,18 +27,21 @@ export default function VehicleStockList() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await vehicleStockApi.list({ page, limit, search: search || undefined, stock: stockFilter });
+      const { data } = await vehicleStockApi.list({
+        page, limit, search: search || undefined, stock: stockFilter,
+        fromDate: fromDate || undefined, toDate: toDate || undefined,
+      });
       setRows(listItems(data));
       setTotal(listTotal(data));
       setPages(listPages(data));
     } catch { toast({ title: 'Failed to load stock', variant: 'error' }); }
     finally { setLoading(false); }
-  }, [page, limit, search, stockFilter]);
+  }, [page, limit, search, stockFilter, fromDate, toDate]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Reset to page 1 whenever the search, filter or page size changes.
-  useEffect(() => { setPage(1); }, [search, stockFilter, limit]);
+  // Reset to page 1 whenever the search, filters or page size change.
+  useEffect(() => { setPage(1); }, [search, stockFilter, limit, fromDate, toDate]);
 
   const STOCK_TABS = [
     { key: 'available', label: 'Available Stock' },
@@ -52,14 +58,18 @@ export default function VehicleStockList() {
     } catch { toast({ title: 'Delete failed', variant: 'error' }); }
   };
 
-  const cols = ['Sr No', 'Vehicle Model', 'Variant', 'Color', 'Chassis Number', 'Engine Number', 'In Date', 'Dealer Name', 'Qty', 'Used', 'Remaining', 'Action'];
+  // Qty column removed — every stock row is a single vehicle (qty is locked to 1).
+  const cols = ['Sr No', 'Vehicle Model', 'Variant', 'Color', 'Chassis Number', 'Engine Number', 'In Date', 'Dealer Name', 'Used', 'Remaining', 'Action'];
 
   // Export every row matching the current search + stock filter (not just this page).
   const [exporting, setExporting] = useState(false);
   const handleExport = async () => {
     setExporting(true);
     try {
-      const { data } = await vehicleStockApi.list({ all: 1, search: search || undefined, stock: stockFilter });
+      const { data } = await vehicleStockApi.list({
+        all: 1, search: search || undefined, stock: stockFilter,
+        fromDate: fromDate || undefined, toDate: toDate || undefined,
+      });
       const all = listItems(data);
       if (!all.length) { toast({ title: 'Nothing to export', variant: 'error' }); return; }
 
@@ -69,7 +79,7 @@ export default function VehicleStockList() {
         ...all.map((r, i) => [
           i + 1, r.vehicleModel, r.variant, r.color, r.chassisNumber, r.engineNumber,
           r.inDate ? formatDate(r.inDate) : '', r.dealerName,
-          r.qty ?? 0, r.used ?? 0, r.remaining ?? ((r.qty ?? 0) - (r.used ?? 0)),
+          r.used ?? 0, r.remaining ?? ((r.qty ?? 0) - (r.used ?? 0)),
         ].map(csvCell).join(','))
       ];
 
@@ -108,9 +118,25 @@ export default function VehicleStockList() {
         <div className="relative flex-1 max-w-lg">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search by Model, Variant, Color, Chassis or Engine No."
+            placeholder="Search by Model, Variant, Color, Chassis, Engine No. or Dealer"
             className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
         </div>
+        {/* In Date range */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 whitespace-nowrap">In Date</span>
+          <DateField value={fromDate} onChange={e => setFromDate(e.target.value)}
+            className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+          <span className="text-xs text-gray-400">to</span>
+          <DateField value={toDate} onChange={e => setToDate(e.target.value)}
+            className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+          {(fromDate || toDate) && (
+            <button onClick={() => { setFromDate(''); setToDate(''); }}
+              className="text-xs text-gray-500 hover:text-red-600 underline whitespace-nowrap">
+              Clear
+            </button>
+          )}
+        </div>
+
         <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
           {STOCK_TABS.map(t => (
             <button key={t.key} onClick={() => setStockFilter(t.key)}
@@ -148,7 +174,6 @@ export default function VehicleStockList() {
                 <td className="py-3 px-4 text-gray-500 text-xs">{r.engineNumber || '-'}</td>
                 <td className="py-3 px-4 text-gray-600 text-xs whitespace-nowrap">{r.inDate ? formatDate(r.inDate) : '-'}</td>
                 <td className="py-3 px-4 text-gray-700">{r.dealerName || '-'}</td>
-                <td className="py-3 px-4 text-gray-800 font-medium">{r.qty}</td>
                 <td className="py-3 px-4 text-gray-600">{r.used ?? 0}</td>
                 <td className="py-3 px-4">
                   <span className={`font-semibold ${(r.remaining ?? r.qty) <= 0 ? 'text-red-600' : 'text-green-600'}`}>{r.remaining ?? r.qty}</span>

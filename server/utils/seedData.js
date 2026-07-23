@@ -16,11 +16,19 @@ const defaultRoles = (garageId) => ['Mechanic', 'Supervisor'].map(name => ({
   garageId, name, menuAccess: [...ALL_MENUS], jobcardPermissions: { ...ALL_JOBCARD_PERMS }, stockPermissions: { ...ALL_STOCK_PERMS }, isDefault: true, active: true,
 }));
 
+/* ── NOT SEEDED ───────────────────────────────────────────────────────────
+   The lists below are kept for reference only — each franchise creates its own
+   jobcard types, customer voices, labour items, lubes and vehicle makes/models
+   from Masters. To re-enable any of them, uncomment the constant AND its lines
+   in seedGarageData() / seedMissingGarageData() below.
+
 const JOBCARD_TYPES = [
   'Major Service', 'Minor Service', 'General Repair',
   'Wheel Alignment & Balancing', 'Washing', 'Accidental Work', 'FREE Service 1'
 ];
+*/
 
+// ✅ STILL SEEDED — every new garage needs statuses to run the jobcard flow.
 const JOBCARD_STATUSES = [
   { name: 'Work Not Yet Started (Open)', category: 'Open' },
   { name: 'Estimate Shared (Open)', category: 'Open' },
@@ -31,6 +39,7 @@ const JOBCARD_STATUSES = [
   { name: 'Closed', category: 'Closed' }
 ];
 
+/* ── NOT SEEDED (kept for reference) ──────────────────────────────────────
 const CUSTOMER_VOICE_OPTIONS = [
   'Servicing', 'General Repair', 'Accidental Repair', 'Wheel Alignment',
   'Balancing', 'Washing', 'Oil Check and Change', 'Customization',
@@ -64,18 +73,24 @@ const LUBE_ITEMS = [
   { name: 'Chain Lube', partNumber: 'CL001', unitPrice: 100, currentStock: 20, isFrequent: true },
   { name: 'Coolant', partNumber: 'CO001', unitPrice: 80, currentStock: 25, isFrequent: false }
 ];
+*/
 
+// Only jobcard statuses + default staff roles are seeded. Jobcard types, customer
+// voices, labour items, lubes and vehicle makes/models are intentionally NOT seeded —
+// each franchise creates its own from Masters. Re-enable by uncommenting the blocks
+// below together with their constants above.
 const seedGarageData = async (garageId) => {
   try {
     await Promise.all([
-      ...JOBCARD_TYPES.map(name => JobcardType.create({ name, garageId, active: true })),
       ...JOBCARD_STATUSES.map(s => JobcardStatus.create({ ...s, garageId, active: true })),
-      ...CUSTOMER_VOICE_OPTIONS.map(name => CustomerVoice.create({ name, garageId, active: true })),
-      ...LABOUR_ITEMS.map(item => LabourItem.create({ ...item, garageId, active: true })),
-      ...LUBE_ITEMS.map(item => Lube.create({ ...item, garageId, active: true })),
-      StaffRole.insertMany(defaultRoles(garageId))
+      StaffRole.insertMany(defaultRoles(garageId)),
+      // ...JOBCARD_TYPES.map(name => JobcardType.create({ name, garageId, active: true })),
+      // ...CUSTOMER_VOICE_OPTIONS.map(name => CustomerVoice.create({ name, garageId, active: true })),
+      // ...LABOUR_ITEMS.map(item => LabourItem.create({ ...item, garageId, active: true })),
+      // ...LUBE_ITEMS.map(item => Lube.create({ ...item, garageId, active: true })),
     ]);
 
+    /* Vehicle makes/models — not seeded; franchises add their own.
     for (const [makeName, models] of Object.entries(VEHICLE_DATA)) {
       const make = await VehicleMake.create({ name: makeName, garageId, active: true });
       await Promise.all(
@@ -84,6 +99,7 @@ const seedGarageData = async (garageId) => {
         )
       );
     }
+    */
 
     console.log(`Seeded data for garage ${garageId}`);
   } catch (error) {
@@ -106,14 +122,16 @@ const seedMissingGarageData = async (garageId) => {
     added[key] = docs.length;
   };
 
-  await seedIfEmpty('jobcardTypes',    JobcardType,   () => JOBCARD_TYPES.map(name => ({ name, garageId, active: true })));
   await seedIfEmpty('jobcardStatuses', JobcardStatus, () => JOBCARD_STATUSES.map(s => ({ ...s, garageId, active: true })));
-  await seedIfEmpty('customerVoices',  CustomerVoice, () => CUSTOMER_VOICE_OPTIONS.map(name => ({ name, garageId, active: true })));
-  await seedIfEmpty('labourItems',     LabourItem,    () => LABOUR_ITEMS.map(i => ({ ...i, garageId, active: true })));
-  await seedIfEmpty('lubes',           Lube,          () => LUBE_ITEMS.map(i => ({ ...i, garageId, active: true })));
   await seedIfEmpty('staffRoles',      StaffRole,     () => defaultRoles(garageId));
 
-  // Vehicle makes/models are seeded together (models need their make's _id)
+  // Not backfilled — franchises create these themselves from Masters:
+  // await seedIfEmpty('jobcardTypes',   JobcardType,   () => JOBCARD_TYPES.map(name => ({ name, garageId, active: true })));
+  // await seedIfEmpty('customerVoices', CustomerVoice, () => CUSTOMER_VOICE_OPTIONS.map(name => ({ name, garageId, active: true })));
+  // await seedIfEmpty('labourItems',    LabourItem,    () => LABOUR_ITEMS.map(i => ({ ...i, garageId, active: true })));
+  // await seedIfEmpty('lubes',          Lube,          () => LUBE_ITEMS.map(i => ({ ...i, garageId, active: true })));
+
+  /* Vehicle makes/models — not backfilled either.
   const makeCount = await VehicleMake.countDocuments({ garageId });
   if (makeCount > 0) {
     added.vehicleMakes = 0;
@@ -128,6 +146,7 @@ const seedMissingGarageData = async (garageId) => {
     }
     added.vehicleMakes = n;
   }
+  */
 
   return added;
 };
