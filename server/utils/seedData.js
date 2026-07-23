@@ -91,4 +91,45 @@ const seedGarageData = async (garageId) => {
   }
 };
 
-module.exports = { seedGarageData, defaultRoles };
+// Idempotent backfill for garages that were created without default masters
+// (e.g. franchises created from the Super Admin panel before seeding was wired in).
+// Only seeds a master type when that garage currently has NONE of it — existing
+// data is never touched, duplicated or overwritten. Safe to run more than once.
+const seedMissingGarageData = async (garageId) => {
+  const added = {};
+
+  const seedIfEmpty = async (key, Model, buildDocs) => {
+    const count = await Model.countDocuments({ garageId });
+    if (count > 0) { added[key] = 0; return; }
+    const docs = buildDocs();
+    await Model.insertMany(docs);
+    added[key] = docs.length;
+  };
+
+  await seedIfEmpty('jobcardTypes',    JobcardType,   () => JOBCARD_TYPES.map(name => ({ name, garageId, active: true })));
+  await seedIfEmpty('jobcardStatuses', JobcardStatus, () => JOBCARD_STATUSES.map(s => ({ ...s, garageId, active: true })));
+  await seedIfEmpty('customerVoices',  CustomerVoice, () => CUSTOMER_VOICE_OPTIONS.map(name => ({ name, garageId, active: true })));
+  await seedIfEmpty('labourItems',     LabourItem,    () => LABOUR_ITEMS.map(i => ({ ...i, garageId, active: true })));
+  await seedIfEmpty('lubes',           Lube,          () => LUBE_ITEMS.map(i => ({ ...i, garageId, active: true })));
+  await seedIfEmpty('staffRoles',      StaffRole,     () => defaultRoles(garageId));
+
+  // Vehicle makes/models are seeded together (models need their make's _id)
+  const makeCount = await VehicleMake.countDocuments({ garageId });
+  if (makeCount > 0) {
+    added.vehicleMakes = 0;
+  } else {
+    let n = 0;
+    for (const [makeName, models] of Object.entries(VEHICLE_DATA)) {
+      const make = await VehicleMake.create({ name: makeName, garageId, active: true });
+      await VehicleModel.insertMany(
+        models.map(modelName => ({ name: modelName, makeId: make._id, makeName, garageId, active: true }))
+      );
+      n++;
+    }
+    added.vehicleMakes = n;
+  }
+
+  return added;
+};
+
+module.exports = { seedGarageData, seedMissingGarageData, defaultRoles };

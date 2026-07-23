@@ -3,11 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Boxes, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../components/ui/Toast';
+import { DateField } from '../../components/ui/DateField';
 import { vehicleStockApi } from '../../api/vehicleStockApi';
 
 const cellCls = 'w-full border border-border rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white';
 
-const emptyRow = () => ({ vehicleModel: '', variant: '', color: '', chassisNumber: '', engineNumber: '', qty: 1, inDate: '', dealerName: '' });
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
+const emptyRow = () => ({ vehicleModel: '', variant: '', color: '', chassisNumber: '', engineNumber: '', qty: 1, inDate: todayStr(), dealerName: '' });
 
 export default function VehicleStockForm() {
   const { id } = useParams();
@@ -96,7 +99,7 @@ export default function VehicleStockForm() {
                   <td className="py-2 px-2"><input className={cellCls} value={r.color} onChange={e => updateRow(idx, 'color', e.target.value)} /></td>
                   <td className="py-2 px-2"><input className={cellCls} value={r.chassisNumber} onChange={e => updateRow(idx, 'chassisNumber', e.target.value)} /></td>
                   <td className="py-2 px-2"><input className={cellCls} value={r.engineNumber} onChange={e => updateRow(idx, 'engineNumber', e.target.value)} /></td>
-                  <td className="py-2 px-2 w-36"><input type="date" className={cellCls} value={r.inDate} onChange={e => updateRow(idx, 'inDate', e.target.value)} /></td>
+                  <td className="py-2 px-2 w-36"><DateField value={r.inDate} onChange={e => updateRow(idx, 'inDate', e.target.value)} className={cellCls} /></td>
                   <td className="py-2 px-2"><input className={cellCls} value={r.dealerName} onChange={e => updateRow(idx, 'dealerName', e.target.value)} placeholder="Dealer / from whom" /></td>
                   <td className="py-2 px-2 w-20"><input type="number" readOnly value={1}
                     title="Each vehicle is a unique stock — quantity is fixed to 1."

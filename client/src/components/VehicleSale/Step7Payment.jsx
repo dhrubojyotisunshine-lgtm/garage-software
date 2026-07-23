@@ -13,7 +13,7 @@ function SummaryRow({ label, value, strong }) {
   );
 }
 
-export default function Step7Payment({ form, setNested, errors }) {
+export default function Step7Payment({ form, setTop, setNested, errors }) {
   const p = form.payment;
   const d = computeDerived(form).payment;
 
@@ -101,6 +101,34 @@ export default function Step7Payment({ form, setNested, errors }) {
         <p className="text-xs text-gray-400 mt-2">Use “Add Payment” from the Sales List to record new installments.</p>
       </SectionCard>
     )}
+
+    {/* Booking Details — moved here from the Vehicle Details step. */}
+    <SectionCard title="Booking Details">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <Field label="Booking Number">
+          <input className={inputCls} value={form.bookingNo} onChange={e => setTop('bookingNo', e.target.value)} />
+        </Field>
+        <Field label="Booking Date">
+          <DateField value={form.bookingDate} onChange={e => setTop('bookingDate', e.target.value)} className={`${inputCls} w-full`} />
+        </Field>
+        <Field label="Expected Delivery Date">
+          <DateField value={form.deliveryDate} onChange={e => setTop('deliveryDate', e.target.value)} className={`${inputCls} w-full`} />
+        </Field>
+        <Field label="Invoice No.">
+          <input className={`${inputCls} bg-gray-50 text-gray-500`} value={form.invoiceNo || ''} readOnly placeholder="Auto-generated on save" />
+        </Field>
+        <Field label="Sale Type" required error={errors['saleType']}>
+          <select className={inputCls} value={form.saleType} onChange={e => setTop('saleType', e.target.value)}>
+            <option value="Cash">Cash</option>
+            <option value="Finance">Finance</option>
+            <option value="Exchange">Exchange</option>
+          </select>
+        </Field>
+        <Field label="Enter Financer">
+          <input className={inputCls} value={form.salesExecutive} onChange={e => setTop('salesExecutive', e.target.value)} placeholder="Enter Financer" />
+        </Field>
+      </div>
+    </SectionCard>
     </>
   );
 }

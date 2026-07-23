@@ -5,7 +5,7 @@ import { ProtectedRoute } from './pages/auth/ProtectedRoute';
 import { ToastContainer } from './components/ui/Toast';
 import LandingPage from './pages/landing/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
-import SignupPage from './pages/auth/SignupPage';
+// import SignupPage from './pages/auth/SignupPage';   // self-registration disabled
 import DashboardPage from './pages/dashboard/DashboardPage';
 import MastersPage from './pages/masters/MastersPage';
 import JobcardListPage from './pages/jobcards/JobcardListPage';
@@ -47,6 +47,7 @@ import SuperAdminLoginPage from './pages/superadmin/SuperAdminLoginPage';
 import SuperAdminLayout from './pages/superadmin/SuperAdminLayout';
 import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard';
 import GaragesPage from './pages/superadmin/GaragesPage';
+import SuperAdminProfile from './pages/superadmin/SuperAdminProfile';
 import useAuthStore from './store/authStore';
 
 function App() {
@@ -62,7 +63,10 @@ function App() {
         {/* Public — landing page retired; root goes straight to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
+        {/* Self-registration disabled — /signup now falls through to the catch-all
+            and redirects to login. The SignupPage component is left intact.
         <Route path="/signup" element={<SignupPage />} />
+        */}
 
         {/* Print pages (no sidebar) */}
         <Route path="/invoice/:id" element={<InvoicePage />} />
@@ -122,6 +126,7 @@ function App() {
         <Route path="/superadmin" element={<SuperAdminLayout />}>
           <Route path="dashboard" element={<SuperAdminDashboard />} />
           <Route path="garages"   element={<GaragesPage />} />
+          <Route path="profile"   element={<SuperAdminProfile />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

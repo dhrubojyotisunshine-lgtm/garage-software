@@ -118,7 +118,7 @@ function CompatibleForField({ form, setForm, makes, models, onMakeChange }) {
 
 /* ── Add Spare Modal ────────────────────────────────────────── */
 function SpareModal({ item, onClose, onSaved, makes }) {
-  const [form, setForm] = useState(item ? { ...item } : { allVehicles: true, unit: 'units', subCategory: 'Frequent Items', currentStock: 1, lowerLimit: 0, purchasePrice: 0, sellingPrice: 0 });
+  const [form, setForm] = useState(item ? { ...item } : { allVehicles: false, unit: 'units', subCategory: 'Frequent Items', currentStock: 1, lowerLimit: 0, purchasePrice: 0, sellingPrice: 0 });
   const [models, setModels] = useState([]);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -219,7 +219,7 @@ function SpareModal({ item, onClose, onSaved, makes }) {
 
 /* ── Add Lube Modal ─────────────────────────────────────────── */
 function LubeModal({ item, onClose, onSaved, makes }) {
-  const [form, setForm] = useState(item ? { ...item } : { allVehicles: true, unit: 'ltr', currentStock: 1, lowerLimit: 0, purchasePrice: 0, sellingPrice: 0 });
+  const [form, setForm] = useState(item ? { ...item } : { allVehicles: false, unit: 'ltr', currentStock: 1, lowerLimit: 0, purchasePrice: 0, sellingPrice: 0 });
   const [models, setModels] = useState([]);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -312,7 +312,7 @@ function LubeModal({ item, onClose, onSaved, makes }) {
 
 /* ── Add Job Modal ──────────────────────────────────────────── */
 function JobModal({ item, onClose, onSaved, makes }) {
-  const [form, setForm] = useState(item ? { ...item } : { allVehicles: true, unit: 'units', subCategory: 'out_source', sellingPrice: 0 });
+  const [form, setForm] = useState(item ? { ...item } : { allVehicles: false, unit: 'units', subCategory: 'out_source', sellingPrice: 0 });
   const [models, setModels] = useState([]);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -389,7 +389,7 @@ function JobModal({ item, onClose, onSaved, makes }) {
 
 /* ── Add Group Modal ────────────────────────────────────────── */
 function GroupModal({ item, onClose, onSaved, makes }) {
-  const [form, setForm] = useState(item ? { ...item } : { allVehicles: true, items: [], totalPrice: 0 });
+  const [form, setForm] = useState(item ? { ...item } : { allVehicles: false, items: [], totalPrice: 0 });
   const [activeType, setActiveType] = useState('Spare');
   const [models, setModels] = useState([]);
   const [searchResults, setSearchResults] = useState([]);

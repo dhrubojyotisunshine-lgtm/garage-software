@@ -33,6 +33,8 @@ const useSuperAdminStore = create((set) => ({
     }
   },
 
+  setAdmin: (admin) => set({ admin }),
+
   logout: () => {
     localStorage.removeItem('ttn_sa_token');
     set({ admin: null, token: null });

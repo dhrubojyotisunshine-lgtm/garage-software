@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Car, Plus, Trash2, Search } from 'lucide-react';
-import { DateField } from '../ui/DateField';
-import { SectionCard, Field, inputCls, errorCls } from './parts';
+import { SectionCard, inputCls, errorCls } from './parts';
 import { emptyVehicle, num } from '../../pages/VehicleSale/saleUtils';
 import { vehicleStockApi } from '../../api/vehicleStockApi';
 import { formatCurrency } from '../../utils/format';
@@ -11,7 +10,7 @@ import useAuthStore from '../../store/authStore';
 const cellCls = 'w-full border border-border rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white';
 const roCellCls = 'w-full border border-border rounded-md px-2 py-1.5 text-sm bg-gray-50 text-gray-600';
 
-export default function Step3Vehicle({ form, setForm, setTop, errors }) {
+export default function Step3Vehicle({ form, setForm, errors }) {
   const vehicles = form.vehicles || [];
 
   // Owner always may delete a saved vehicle; staff need the vehicle-sale permission.
@@ -162,33 +161,6 @@ export default function Step3Vehicle({ form, setForm, setTop, errors }) {
           className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 border border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary hover:text-white transition-colors">
           <Plus size={15} /> Add Another Vehicle
         </button>
-      </SectionCard>
-
-      <SectionCard title="Booking Details">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <Field label="Booking Number">
-            <input className={inputCls} value={form.bookingNo} onChange={e => setTop('bookingNo', e.target.value)} />
-          </Field>
-          <Field label="Booking Date">
-            <DateField value={form.bookingDate} onChange={e => setTop('bookingDate', e.target.value)} className={`${inputCls} w-full`} />
-          </Field>
-          <Field label="Expected Delivery Date">
-            <DateField value={form.deliveryDate} onChange={e => setTop('deliveryDate', e.target.value)} className={`${inputCls} w-full`} />
-          </Field>
-          <Field label="Invoice No.">
-            <input className={`${inputCls} bg-gray-50 text-gray-500`} value={form.invoiceNo || ''} readOnly placeholder="Auto-generated on save" />
-          </Field>
-          <Field label="Sale Type" required error={errors['saleType']}>
-            <select className={inputCls} value={form.saleType} onChange={e => setTop('saleType', e.target.value)}>
-              <option value="Cash">Cash</option>
-              <option value="Finance">Finance</option>
-              <option value="Exchange">Exchange</option>
-            </select>
-          </Field>
-          <Field label="Enter Financer">
-            <input className={inputCls} value={form.salesExecutive} onChange={e => setTop('salesExecutive', e.target.value)} placeholder="Enter Financer" />
-          </Field>
-        </div>
       </SectionCard>
     </>
   );

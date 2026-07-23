@@ -8,7 +8,7 @@ async function seed() {
 
   const email    = process.env.SUPER_ADMIN_EMAIL    || 'superadmin@ttngarage.com';
   const password = process.env.SUPER_ADMIN_PASSWORD || 'SuperAdmin@123';
-  const name     = process.env.SUPER_ADMIN_NAME     || 'TTN Super Admin';
+  const name     = process.env.SUPER_ADMIN_NAME     || 'Super Admin';
 
   const existing = await SuperAdmin.findOne({ email });
   if (existing) {

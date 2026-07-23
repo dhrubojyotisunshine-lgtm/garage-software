@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Plus, X, CheckCircle, XCircle, Eye, EyeOff, Settings, GripVertical, Camera, RotateCcw, KeyRound, Copy, Check, RefreshCw, LogIn } from 'lucide-react';
+import { Search, Plus, X, CheckCircle, XCircle, Eye, EyeOff, Settings, GripVertical, Camera, RotateCcw, KeyRound, Copy, Check, RefreshCw, LogIn, Database } from 'lucide-react';
 import { superAdminApi } from '../../api/superAdmin';
 import { useToast } from '../../components/ui/Toast';
 import { assetUrl } from '../../utils/asset';
@@ -540,6 +540,23 @@ export default function GaragesPage() {
   const [togglingId, setToggling] = useState(null);
   const [resetPwGarage, setResetPw] = useState(null);
   const [loginId, setLoginId] = useState(null);
+  const [seedId, setSeedId]   = useState(null);
+
+  // Backfill default masters (jobcard types/statuses, customer voices, labour, lubes,
+  // vehicle makes/models, roles) for a franchise that was created without them.
+  // Idempotent on the server — only fills what's missing, never duplicates.
+  const handleSeedDefaults = async (g) => {
+    if (!window.confirm(
+      `Add missing default master data to "${g.workshopName}"?\n\nOnly master types this franchise has NONE of will be added. Existing data is not changed.`
+    )) return;
+    setSeedId(String(g._id));
+    try {
+      const { data } = await superAdminApi.seedDefaults(g._id);
+      toast({ title: data.message || 'Defaults added', variant: 'success' });
+    } catch (e) {
+      toast({ title: e?.response?.data?.message || 'Failed to add defaults', variant: 'error' });
+    } finally { setSeedId(null); }
+  };
 
   // Log in as (impersonate) a franchise: store its token and open the garage app.
   // The super-admin session (ttn_sa_token) stays intact so we can return.
@@ -609,18 +626,20 @@ export default function GaragesPage() {
         </select>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
+      {/* overflow-x-auto (not hidden) so the right-hand columns — Manage / Login /
+          Defaults — stay reachable via horizontal scroll on narrow screens. */}
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto">
+        <table className="w-full text-sm min-w-[1250px]">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50">
-              {['Workshop Name','Owner','Mobile','City','Status','Created','Credentials','Reset Pw','Action','Manage','Login'].map(h => (
+              {['Workshop Name','Owner','Mobile','City','Status','Created','Credentials','Reset Pw','Action','Manage','Login','Defaults'].map(h => (
                 <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={11} className="text-center py-10 text-gray-400">Loading...</td></tr>}
-            {!loading && garages.length === 0 && <tr><td colSpan={11} className="text-center py-10 text-gray-400">No franchises found</td></tr>}
+            {loading && <tr><td colSpan={12} className="text-center py-10 text-gray-400">Loading...</td></tr>}
+            {!loading && garages.length === 0 && <tr><td colSpan={12} className="text-center py-10 text-gray-400">No franchises found</td></tr>}
             {garages.map(g => (
               <tr key={String(g._id)} className="border-t border-gray-100 hover:bg-gray-50">
                 <td className="px-5 py-3 font-medium text-gray-800">{g.workshopName}</td>
@@ -673,6 +692,15 @@ export default function GaragesPage() {
                     onClick={() => handleLoginAs(g)}
                     className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium border border-green-200 text-green-700 hover:bg-green-50 transition-colors disabled:opacity-50">
                     <LogIn size={12} /> {loginId === String(g._id) ? '...' : 'Login'}
+                  </button>
+                </td>
+                <td className="px-5 py-3">
+                  <button
+                    disabled={seedId === String(g._id)}
+                    onClick={() => handleSeedDefaults(g)}
+                    title="Add missing default master data (types, statuses, etc.)"
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors disabled:opacity-50">
+                    <Database size={12} /> {seedId === String(g._id) ? '...' : 'Defaults'}
                   </button>
                 </td>
               </tr>

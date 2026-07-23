@@ -1,7 +1,8 @@
 // Shared form shape + derived-value calculations for the Vehicle Sale wizard.
 
+// The Dealer / Showroom step was removed from the wizard — those details are still
+// auto-filled from the garage profile and saved with every sale, just not shown.
 export const STEPS = [
-  'Dealer & Sale Info',
   'Customer Details',
   'Vehicle Details',
   'Payment Details',
@@ -67,20 +68,18 @@ export function computeDerived(form) {
 export function validateStep(step, form) {
   const e = {};
   if (step === 0) {
-    // Dealer/Showroom details are auto-filled — nothing to validate here.
-  } else if (step === 1) {
     if (!form.customer?.name?.trim()) e['customer.name'] = 'Customer Name is required.';
     if (!form.customer?.mobile?.trim()) e['customer.mobile'] = 'Mobile Number is required.';
-  } else if (step === 2) {
-    // Sale Type + Booking details live on this step now (Invoice is auto-generated).
-    if (!form.saleType) e['saleType'] = 'Sale Type is required.';
+  } else if (step === 1) {
     if (!form.vehicles?.length) e['vehicles'] = 'Add at least one vehicle.';
     else {
       const first = form.vehicles[0];
       if (!first.vehicleModel?.trim()) e['vehicles.0.vehicleModel'] = 'Vehicle Model is required.';
     }
-  } else if (step === 3) {
+  } else if (step === 2) {
+    // Booking Details (incl. Sale Type) live on the Payment step now.
     if (!form.payment?.paymentStatus) e['payment.paymentStatus'] = 'Payment Status is required.';
+    if (!form.saleType) e['saleType'] = 'Sale Type is required.';
   }
   return e;
 }

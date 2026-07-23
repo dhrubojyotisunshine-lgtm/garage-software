@@ -11,6 +11,10 @@ import useAuthStore from '../../store/authStore';
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
+// Shipped fallback logo (server/uploads/default_logo.png), used when neither the
+// super-admin branding logo nor the garage's own workshop logo is set.
+const DEFAULT_LOGO = '/uploads/default_logo.png';
+
 const ALL_NAV = [
   { key: 'dashboard',    label: 'Dashboard',    icon: LayoutDashboard, path: '/dashboard' },
   { key: 'appointment',  label: 'Appointment',  icon: Calendar,        path: '/appointment' },
@@ -73,9 +77,14 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onNavigate })
     return ALL_NAV.filter(n => !hidden.has(n.key));
   }, [garage?.menuConfig, isStaff, staffUser]);
 
-  // Brand logo (super-admin branding logo, else workshop logo)
-  const rawLogo = garage?.branding?.logoUrl || garage?.logoUrl;
-  const logoUrl = rawLogo ? assetUrl(rawLogo) : null;
+  // Brand logo precedence: super-admin branding logo → the garage's own workshop
+  // logo → the bundled default (server/uploads/default_logo.png), so the sidebar
+  // never renders empty when nobody has uploaded anything.
+  const rawLogo = garage?.branding?.logoUrl || garage?.logoUrl || DEFAULT_LOGO;
+  const logoUrl = assetUrl(rawLogo);
+  // If even the default file is missing on the server, fall back to the icon
+  // rather than showing a broken-image box.
+  const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
     ALL_NAV.forEach(item => {
@@ -103,10 +112,11 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onNavigate })
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-white/10">
-        {logoUrl ? (
+        {logoUrl && !logoError ? (
           <img
             src={logoUrl}
             alt="logo"
+            onError={() => setLogoError(true)}
             className="w-8 h-8 rounded-lg object-contain flex-shrink-0 bg-white/10"
           />
         ) : (
@@ -117,9 +127,8 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onNavigate })
         {!collapsed && (
           <div>
             <div className="font-heading font-bold text-white text-sm leading-tight">
-              {garage?.workshopName || 'Sunshine Garage'}
+              {garage?.workshopName || 'RECKON MOTORS'}
             </div>
-            <div className="text-[10px] text-sidebar-text/60">Management System</div>
           </div>
         )}
       </div>
@@ -188,7 +197,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onNavigate })
               <p className="text-[10px] text-sidebar-text/40">{staffUser.role} · {garage?.workshopName}</p>
             </div>
           ) : (
-            <p className="text-[10px] text-sidebar-text/40">v1.0.0 · Sunshine Garage</p>
+            <p className="text-[10px] text-sidebar-text/40">v1.0.0 · RECKON MOTORS</p>
           )}
         </div>
       )}

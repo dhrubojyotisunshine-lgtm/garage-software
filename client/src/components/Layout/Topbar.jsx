@@ -3,6 +3,7 @@ import { useState } from 'react';
 import useAuthStore from '../../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import { getInitials } from '../../utils/format';
+import { assetUrl } from '../../utils/asset';
 import { cn } from '../../utils/cn';
 
 export function Topbar({ onToggleSidebar }) {
@@ -34,8 +35,10 @@ export function Topbar({ onToggleSidebar }) {
             onClick={() => setShowDropdown(!showDropdown)}
             className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <div className="w-7 h-7 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-bold">
-              {getInitials(garage?.workshopName || garage?.firstName || 'G')}
+            <div className="w-7 h-7 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-bold overflow-hidden">
+              {garage?.profilePicUrl
+                ? <img src={assetUrl(garage.profilePicUrl)} alt="" className="w-full h-full object-cover" />
+                : getInitials(garage?.workshopName || garage?.firstName || 'G')}
             </div>
             <div className="text-left hidden sm:block">
               <div className="text-xs font-semibold text-gray-800 leading-tight">

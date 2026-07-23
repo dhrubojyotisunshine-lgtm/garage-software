@@ -66,7 +66,7 @@ export default function SignupPage() {
     }
     const result = await verifyOtp({ phone, otp, password });
     if (result.success) {
-      toast({ title: 'Account created!', description: 'Welcome to Sunshine Garage', variant: 'success' });
+      toast({ title: 'Account created!', description: 'Welcome to RECKON MOTORS', variant: 'success' });
       navigate('/dashboard');
     } else {
       toast({ title: 'Verification failed', description: result.message, variant: 'error' });
@@ -93,7 +93,7 @@ export default function SignupPage() {
           <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
             <Wrench size={18} className="text-white" />
           </div>
-          <span className="font-heading font-bold text-gray-800 text-xl">Sunshine Garage</span>
+          <span className="font-heading font-bold text-gray-800 text-xl">RECKON MOTORS</span>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-border p-8">

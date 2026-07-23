@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,6 +7,11 @@ import { Wrench, Eye, EyeOff, ArrowRight, Building2, Users } from 'lucide-react'
 import useAuthStore from '../../store/authStore';
 import { firstAllowedPath } from '../../components/Layout/Sidebar';
 import { useToast } from '../../components/ui/Toast';
+import { fetchPublicBranding } from '../../api/superAdmin';
+import { assetUrl } from '../../utils/asset';
+
+// Shown until (or unless) the Super Admin sets a brand name / logo in their Profile.
+const DEFAULT_BRAND = 'RECKON MOTORS';
 
 const garageSchema = z.object({
   mobile:   z.string().min(10, 'Enter a valid mobile number'),
@@ -22,6 +27,18 @@ export default function LoginPage() {
   const [mode, setMode]         = useState('garage'); // 'garage' | 'staff'
   const [showPw, setShowPw]     = useState(false);
   const [staffForm, setStaffForm] = useState({ login: '', password: '' });
+
+  // Branding managed from Super Admin → Profile. Failure is non-fatal: the
+  // built-in icon + DEFAULT_BRAND stay in place so login always renders.
+  const [brand, setBrand] = useState({ brandName: '', logoUrl: '' });
+  useEffect(() => {
+    fetchPublicBranding()
+      .then(({ data }) => setBrand({ brandName: data?.brandName || '', logoUrl: data?.logoUrl || '' }))
+      .catch(() => {});
+  }, []);
+
+  const brandName = brand.brandName || DEFAULT_BRAND;
+  const brandLogo = brand.logoUrl ? assetUrl(brand.logoUrl) : null;
 
   /* ── Garage login (react-hook-form) ── */
   const { register, handleSubmit, formState: { errors } } = useForm({
@@ -60,12 +77,13 @@ export default function LoginPage() {
       {/* Left panel */}
       <div className="hidden lg:flex w-1/2 bg-sidebar-bg flex-col justify-between p-12">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-            <Wrench size={20} className="text-white" />
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center overflow-hidden">
+            {brandLogo
+              ? <img src={brandLogo} alt="" className="w-full h-full object-cover" />
+              : <Wrench size={20} className="text-white" />}
           </div>
           <div>
-            <div className="font-heading font-bold text-white text-xl">Sunshine Garage</div>
-            <div className="text-xs text-sidebar-text/60">Management System</div>
+            <div className="font-heading font-bold text-white text-xl">{brandName}</div>
           </div>
         </div>
         <div>
@@ -85,7 +103,7 @@ export default function LoginPage() {
             ))}
           </div>
         </div>
-        <p className="text-sidebar-text/40 text-sm">© 2024 Sunshine Garage · sunshinegarage.in</p>
+        <p className="text-sidebar-text/40 text-sm">© {new Date().getFullYear()} {brandName}</p>
       </div>
 
       {/* Right panel */}
@@ -195,6 +213,8 @@ export default function LoginPage() {
             </form>
           )}
 
+          {/* Self-registration is disabled — garages are created from the Super Admin panel.
+              Restore this block (and the /signup route in App.jsx) to re-enable it.
           {mode === 'garage' && (
             <p className="mt-6 text-center text-sm text-gray-500">
               Don't have an account?{' '}
@@ -203,6 +223,7 @@ export default function LoginPage() {
               </Link>
             </p>
           )}
+          */}
         </div>
       </div>
     </div>

@@ -41,6 +41,7 @@ const JC_PERMISSIONS = [
   { key: 'canAddPayment',   label: 'Record payment / advance' },
   { key: 'canApplyDiscount', label: 'Apply / edit discount' },
   { key: 'canDelete',       label: 'Delete jobcard' },
+  { key: 'canEditClosed',   label: 'Edit a CLOSED jobcard' },
 ];
 
 const STOCK_PERMISSIONS = [
@@ -64,6 +65,7 @@ const EMPTY_ROLE = {
   jobcardPermissions: {
     canCreate: false, canEdit: false, canChangeStatus: false,
     canAddItems: false, canAddPayment: false, canApplyDiscount: false, canDelete: false,
+    canEditClosed: false,
   },
   stockPermissions: {
     canAdd: false, canEdit: false, canUploadCsv: false,
@@ -563,11 +565,12 @@ export default function StaffPage() {
     catch { toast({ title: 'Delete failed', variant: 'error' }); }
   };
 
-  const handleDeleteRole = async (id) => {
+  // Delete Role disabled — see the commented-out button in the roles list.
+  /* const handleDeleteRole = async (id) => {
     if (!confirm('Delete this role?')) return;
     try { await staffApi.deleteRole(id); toast({ title: 'Role deleted', variant: 'success' }); loadRoles(); }
     catch (e) { toast({ title: e.response?.data?.message || 'Delete failed', variant: 'error' }); }
-  };
+  }; */
 
   const permCount = (role) => Object.values(role.jobcardPermissions || {}).filter(Boolean).length;
 
@@ -779,10 +782,15 @@ export default function StaffPage() {
                         className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500" title="Edit role">
                         <Pencil size={14} />
                       </button>
+                      {/* Delete Role disabled — removing a role that staff are assigned
+                          to causes knock-on issues. Restore this block, the
+                          handleDeleteRole handler, staffApi.deleteRole and the
+                          DELETE /staff/roles/:id route together to re-enable.
                       <button onClick={() => handleDeleteRole(role._id)}
                         className="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="Delete role">
                         <Trash2 size={14} />
                       </button>
+                      */}
                     </div>
                   </div>
 

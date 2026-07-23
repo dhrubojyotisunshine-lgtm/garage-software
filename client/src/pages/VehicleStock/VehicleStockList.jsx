@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Search, Plus, Pencil, Trash2, Download } from 'lucide-react';
 import { vehicleStockApi } from '../../api/vehicleStockApi';
 import { useToast } from '../../components/ui/Toast';
 import Pagination from '../../components/ui/Pagination';
 import { listItems, listTotal, listPages } from '../../utils/list';
 import { formatDate } from '../../utils/format';
+
+const csvCell = (v) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 
 export default function VehicleStockList() {
   const navigate = useNavigate();
@@ -52,14 +54,53 @@ export default function VehicleStockList() {
 
   const cols = ['Sr No', 'Vehicle Model', 'Variant', 'Color', 'Chassis Number', 'Engine Number', 'In Date', 'Dealer Name', 'Qty', 'Used', 'Remaining', 'Action'];
 
+  // Export every row matching the current search + stock filter (not just this page).
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { data } = await vehicleStockApi.list({ all: 1, search: search || undefined, stock: stockFilter });
+      const all = listItems(data);
+      if (!all.length) { toast({ title: 'Nothing to export', variant: 'error' }); return; }
+
+      const header = cols.slice(0, -1);   // drop the "Action" column
+      const lines = [
+        header.join(','),
+        ...all.map((r, i) => [
+          i + 1, r.vehicleModel, r.variant, r.color, r.chassisNumber, r.engineNumber,
+          r.inDate ? formatDate(r.inDate) : '', r.dealerName,
+          r.qty ?? 0, r.used ?? 0, r.remaining ?? ((r.qty ?? 0) - (r.used ?? 0)),
+        ].map(csvCell).join(','))
+      ];
+
+      // UTF-8 BOM so Excel renders ₹ and other non-ASCII correctly.
+      const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vehicle-stock-${stockFilter}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: `Exported ${all.length} record(s)`, variant: 'success' });
+    } catch {
+      toast({ title: 'Export failed', variant: 'error' });
+    } finally { setExporting(false); }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-5">
         <h1 className="font-heading font-bold text-gray-800 text-2xl">Stock Management</h1>
-        <button onClick={() => navigate('/vehicle-stock/new')}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors">
-          <Plus size={16} /> Add Stock
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={handleExport} disabled={exporting}
+            className="inline-flex items-center gap-1.5 px-4 py-2 border border-green-200 text-green-700 rounded-lg text-sm font-medium hover:bg-green-50 transition-colors disabled:opacity-60">
+            <Download size={16} /> {exporting ? 'Exporting…' : 'Export CSV'}
+          </button>
+          <button onClick={() => navigate('/vehicle-stock/new')}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors">
+            <Plus size={16} /> Add Stock
+          </button>
+        </div>
       </div>
 
       {/* Search + stock filter */}

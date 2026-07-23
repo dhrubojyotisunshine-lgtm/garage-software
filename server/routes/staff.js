@@ -35,6 +35,9 @@ router.put('/roles/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+/* Role deletion is disabled — deleting a role that staff are assigned to causes
+   knock-on access problems. Uncomment this route (plus staffApi.deleteRole, the
+   handleDeleteRole handler and the button in StaffPage) to re-enable it.
 router.delete('/roles/:id', async (req, res) => {
   try {
     const inUse = await Staff.countDocuments({ roleId: req.params.id, garageId: req.garage._id, active: { $ne: false } });
@@ -43,6 +46,7 @@ router.delete('/roles/:id', async (req, res) => {
     res.json({ message: 'Role deleted' });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
+*/
 
 /* ── Staff CRUD ─────────────────────────────────────────────── */
 

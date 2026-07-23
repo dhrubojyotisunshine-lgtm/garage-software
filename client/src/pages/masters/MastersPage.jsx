@@ -115,6 +115,7 @@ function MasterTable({ entity, tab, makes }) {
               <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sr No</th>
               <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</th>
               {entity === 'vehicle-models' && <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Make</th>}
+              {entity === 'vehicle-models' && <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Variant</th>}
               {entity === 'jobcard-statuses' && <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Category</th>}
               <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
             </tr>
@@ -129,6 +130,7 @@ function MasterTable({ entity, tab, makes }) {
                 <td className="py-3 px-4 text-gray-500">{(page - 1) * limit + idx + 1}</td>
                 <td className="py-3 px-4 font-medium text-gray-800">{item.name}</td>
                 {entity === 'vehicle-models' && <td className="py-3 px-4 text-gray-500">{getMakeName(item.makeId)}</td>}
+                {entity === 'vehicle-models' && <td className="py-3 px-4 text-gray-500">{item.variant || '—'}</td>}
                 {entity === 'jobcard-statuses' && (
                   <td className="py-3 px-4">
                     <Badge variant={item.category === 'Open' ? 'open' : item.category === 'Completed' ? 'completed' : 'closed'}>{item.category}</Badge>

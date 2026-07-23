@@ -12,6 +12,8 @@ const staffRoleSchema = new mongoose.Schema({
     canAddPayment:   { type: Boolean, default: false },
     canApplyDiscount:{ type: Boolean, default: false },
     canDelete:       { type: Boolean, default: false },
+    // Closed jobcards are view-only unless this is granted.
+    canEditClosed:   { type: Boolean, default: false },
   },
   stockPermissions: {
     canAdd:       { type: Boolean, default: false },

@@ -21,7 +21,11 @@ out/
 build/Release
 
 # Uploads
-server/uploads/
+#server/uploads/
+
+# Uploads — ignore runtime uploads, but keep the shipped default logo so it
+server/uploads/*
+!server/uploads/default_logo.png
 
 # Logs
 logs/

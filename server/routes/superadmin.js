@@ -8,7 +8,7 @@ const upload         = require('../middleware/settingsUpload');
 const SuperAdmin     = require('../models/SuperAdmin');
 const Garage         = require('../models/Garage');
 const StaffRole      = require('../models/masters/StaffRole');
-const { defaultRoles } = require('../utils/seedData');
+const { defaultRoles, seedGarageData, seedMissingGarageData } = require('../utils/seedData');
 const Jobcard        = require('../models/Jobcard');
 const CounterSale    = require('../models/CounterSale');
 const Expense        = require('../models/Expense');
@@ -29,13 +29,91 @@ router.post('/login', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
-    res.json({ token, admin: { _id: admin._id, name: admin.name, email: admin.email } });
+    res.json({ token, admin: { _id: admin._id, name: admin.name, email: admin.email, brandName: admin.brandName, logoUrl: admin.logoUrl } });
   } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+/* ── Public branding (NO auth) ─────────────────────────────────
+   Used by the login page, which has no authenticated user yet.
+   Exposes only the display brand name + logo — nothing sensitive. */
+router.get('/branding', async (req, res) => {
+  try {
+    const admin = await SuperAdmin.findOne({ active: { $ne: false } })
+      .sort({ createdAt: 1 })
+      .select('brandName logoUrl');
+    res.json({ brandName: admin?.brandName || '', logoUrl: admin?.logoUrl || '' });
+  } catch {
+    // Never break the login page over branding — fall back to the built-in defaults.
+    res.json({ brandName: '', logoUrl: '' });
+  }
 });
 
 /* ── Me ────────────────────────────────────────────────────── */
 router.get('/me', superAdminProtect, (req, res) => {
   res.json(req.superAdmin);
+});
+
+/* ── Update own profile (name, brandName, email) ───────────── */
+router.put('/profile', superAdminProtect, async (req, res) => {
+  try {
+    const { name, brandName, email } = req.body;
+    const update = {};
+
+    // Never allow the required login/display fields to be blanked out.
+    if (name !== undefined) {
+      if (!String(name).trim()) return res.status(400).json({ message: 'Admin name cannot be empty' });
+      update.name = String(name).trim();
+    }
+    if (brandName !== undefined) update.brandName = String(brandName).trim();
+
+    if (email !== undefined) {
+      const clean = String(email).toLowerCase().trim();
+      // Email is the login id — a blank or malformed value would lock the account out.
+      if (!clean) return res.status(400).json({ message: 'Email cannot be empty' });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) return res.status(400).json({ message: 'Enter a valid email address' });
+      const dup = await SuperAdmin.findOne({ email: clean, _id: { $ne: req.superAdmin._id } });
+      if (dup) return res.status(400).json({ message: 'Email already in use' });
+      update.email = clean;
+    }
+    const admin = await SuperAdmin.findByIdAndUpdate(req.superAdmin._id, update, { new: true }).select('-password');
+    res.json(admin);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+/* ── Upload own logo (raster image only; SVG rejected by filter) ── */
+router.post('/profile/logo', superAdminProtect, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+    const admin = await SuperAdmin.findById(req.superAdmin._id);
+    if (!admin) return res.status(404).json({ message: 'Not found' });
+
+    // Delete old logo file if present
+    if (admin.logoUrl) {
+      const oldPath = path.join(__dirname, '../', admin.logoUrl.replace(/^\//, ''));
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
+    const url = `/uploads/settings/${req.file.filename}`;
+    admin.logoUrl = url;
+    await admin.save();
+    res.json({ message: 'Logo uploaded', url });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+/* ── Change own password ───────────────────────────────────── */
+router.put('/profile/password', superAdminProtect, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    const admin = await SuperAdmin.findById(req.superAdmin._id);
+    if (!admin) return res.status(404).json({ message: 'Not found' });
+    if (!(await admin.matchPassword(currentPassword || ''))) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+    admin.password = newPassword;   // hashed by pre-save hook
+    await admin.save();
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 /* ── Dashboard stats ───────────────────────────────────────── */
@@ -282,8 +360,11 @@ router.post('/garages', superAdminProtect, async (req, res) => {
       isVerified: true
     });
 
-    // Seed default roles (Mechanic + Supervisor, full permissions) for the new franchise
-    await StaffRole.insertMany(defaultRoles(garage._id));
+    // Seed the full default master set (jobcard types & statuses, customer voices,
+    // labour, lubes, vehicle makes/models) plus the default staff roles — same as a
+    // self-registered garage gets. Without this the new franchise opens with empty
+    // Type/Status dropdowns and cannot create a jobcard.
+    await seedGarageData(garage._id);
 
     const garageOut = garage.toObject();
     delete garageOut.password;
@@ -328,6 +409,18 @@ router.post('/garages/:id/login', superAdminProtect, async (req, res) => {
     if (garage.active === false) return res.status(403).json({ message: 'This franchise is deactivated.' });
     const token = jwt.sign({ id: garage._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
     res.json({ token, garage });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+/* ── Backfill default masters for an existing franchise ────── */
+/* Idempotent: only fills master types the garage has NONE of.  */
+router.post('/garages/:id/seed-defaults', superAdminProtect, async (req, res) => {
+  try {
+    const garage = await Garage.findById(req.params.id).select('_id workshopName');
+    if (!garage) return res.status(404).json({ message: 'Franchise not found' });
+    const added = await seedMissingGarageData(garage._id);
+    const total = Object.values(added).reduce((s, n) => s + n, 0);
+    res.json({ message: total ? 'Default master data added' : 'Nothing missing — no changes made', added });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

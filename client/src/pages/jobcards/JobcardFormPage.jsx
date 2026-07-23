@@ -127,6 +127,10 @@ export default function JobcardFormPage() {
   const [saving, setSaving] = useState(false);
   const [editJcNumMode, setEditJcNumMode] = useState(false);
   const [openJobcardWarning, setOpenJobcardWarning] = useState(null);
+  // False until the existing jobcard has been fetched. The form starts out as
+  // statusCategory:'Open', so without this the action buttons would flash before
+  // we know the real status (e.g. Update showing briefly on a Closed jobcard).
+  const [jcLoaded, setJcLoaded] = useState(!isEdit);
 
   // Load masters
   useEffect(() => {
@@ -155,10 +159,7 @@ export default function JobcardFormPage() {
       setVehicleMakes(makes.data);
       setVehicleModels(models.data);
 
-      if (!isEdit && types.data.length > 0) {
-        const first = types.data[0];
-        setForm(f => ({ ...f, type: first._id, typeLabel: first.name }));
-      }
+      // Jobcard Type is deliberately left unselected — the user must pick one.
       if (!isEdit && statuses.data.length > 0) {
         const defaultStatus = isShortInvoice
           ? (statuses.data.find(s => s.category === 'Closed') || statuses.data[statuses.data.length - 1])
@@ -214,7 +215,9 @@ export default function JobcardFormPage() {
         setSelectedCustomer({ _id: data.customerId, name: data.customerName, mobile: data.customerMobile, email: data.customerEmail, customerType: data.customerType });
         setSelectedVehicle({ vehicleNo: data.vehicleNo, makeName: data.vehicleMake, modelName: data.vehicleModel });
       }
-    }).catch(() => toast({ title: 'Failed to load jobcard', variant: 'error' }));
+    })
+      .catch(() => toast({ title: 'Failed to load jobcard', variant: 'error' }))
+      .finally(() => setJcLoaded(true));
   }, [id, isEdit]);
 
   // Customer search
@@ -244,19 +247,26 @@ export default function JobcardFormPage() {
       .catch(() => {});
   }, [selectedVehicle, isEdit]);
 
-  // Item search — spans all item types (Jobs + Spare + Lube) so a part can be found
-  // regardless of the active tab. Each result carries its own _type.
+  // Item search — searches only the ACTIVE tab's item type (Jobs / Spare / Lube),
+  // so the Spare tab lists spares only, the Lube tab lubes only, etc.
   useEffect(() => {
     if (itemSearch.length < 1) { setItemSearchResults([]); return; }
     const q = itemSearch.toLowerCase();
     const tag = (arr, t) => arr.map(i => ({ ...i, _type: t }));
-    const all = [...tag(labourItems, 'Labour'), ...tag(spareItems, 'Spare'), ...tag(lubeItems, 'Lube')];
-    const filtered = all.filter(i =>
+    const source =
+      activeItemTab === 'Labour' ? tag(labourItems, 'Labour') :
+      activeItemTab === 'Spare'  ? tag(spareItems,  'Spare')  :
+      activeItemTab === 'Lube'   ? tag(lubeItems,   'Lube')   : [];
+    const filtered = source.filter(i =>
       i.name.toLowerCase().includes(q) ||
       (i.jobCode || i.partNumber || '').toLowerCase().includes(q)
     );
     setItemSearchResults(filtered.slice(0, 12));
-  }, [itemSearch, labourItems, spareItems, lubeItems]);
+  }, [itemSearch, activeItemTab, labourItems, spareItems, lubeItems]);
+
+  // A Closed jobcard is view-only unless the role has "Edit a CLOSED jobcard".
+  // Owners are unaffected (perm() returns true for non-staff).
+  const canEditThis = jcLoaded && (form.statusCategory !== 'Closed' || perm('canEditClosed'));
 
   const setField = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -393,7 +403,9 @@ export default function JobcardFormPage() {
   });
 
   const handleSave = async () => {
+    if (!canEditThis) { toast({ title: 'This jobcard is closed — you do not have permission to edit it', variant: 'error' }); return; }
     if (!selectedCustomer) { toast({ title: 'Please select a customer', variant: 'error' }); return; }
+    if (!form.type) { toast({ title: 'Please select a jobcard type', variant: 'error' }); return; }
     setSaving(true);
     try {
       const payload = buildPayload();
@@ -413,6 +425,7 @@ export default function JobcardFormPage() {
   // Move the jobcard to a new status category (Completed / Closed) and persist.
   const changeStatusTo = async (category, successMsg) => {
     if (!selectedCustomer) { toast({ title: 'Please select a customer', variant: 'error' }); return; }
+    if (!form.type) { toast({ title: 'Please select a jobcard type', variant: 'error' }); return; }
     const target = jobcardStatuses.find(st => st.category === category);
     if (!target) {
       toast({ title: `No "${category}" status defined`, description: 'Add one under Masters → Jobcard Statuses.', variant: 'error' });
@@ -492,8 +505,12 @@ export default function JobcardFormPage() {
             const t = jobcardTypes.find(x => x._id === e.target.value);
             setForm(f => ({ ...f, type: e.target.value, typeLabel: t?.name || '' }));
           }}
-          className={selectCls}
+          className={`${selectCls}${!form.type ? ' text-gray-400' : ''}`}
+          disabled={!jobcardTypes.length}
         >
+          {!jobcardTypes.length
+            ? <option value="">No types — add in Masters</option>
+            : <option value="">Please select a jobcard type</option>}
           {jobcardTypes.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
         </select>
 
@@ -505,7 +522,9 @@ export default function JobcardFormPage() {
               setForm(f => ({ ...f, status: e.target.value, statusLabel: s?.name || '', statusCategory: s?.category || 'Open' }));
             }}
             className={selectCls}
+            disabled={!jobcardStatuses.length}
           >
+            {!jobcardStatuses.length && <option value="">No statuses — add in Masters</option>}
             {jobcardStatuses.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
           </select>
         ) : (
@@ -1243,10 +1262,11 @@ export default function JobcardFormPage() {
         {/* Edit mode — status-driven action set:
             Open      → Update · Complete · Delete
             Completed → Update · Close · Delete
-            Closed    → Update · (locked, no delete) */}
-        {isEdit && (
+            Closed    → view-only; Update appears only with the
+                        "Edit a CLOSED jobcard" permission */}
+        {isEdit && jcLoaded && (
           <>
-            {perm('canEdit') && (
+            {perm('canEdit') && canEditThis && (
               <Button onClick={handleSave} disabled={saving}>
                 <Save size={14} /> {saving ? 'Saving...' : (isShortInvoice ? 'Update Invoice' : 'Update Jobcard')}
               </Button>
@@ -1274,7 +1294,7 @@ export default function JobcardFormPage() {
 
             {form.statusCategory === 'Closed' && (
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-3 py-2 rounded-lg">
-                <Lock size={13} /> Closed — locked
+                <Lock size={13} /> {canEditThis ? 'Closed — editable' : 'Closed — view only'}
               </span>
             )}
           </>

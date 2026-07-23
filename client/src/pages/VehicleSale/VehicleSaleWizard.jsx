@@ -4,7 +4,6 @@ import { Button } from '../../components/ui/Button';
 import { useToast } from '../../components/ui/Toast';
 import StepIndicator from '../../components/VehicleSale/StepIndicator';
 import WizardFooter from '../../components/VehicleSale/WizardFooter';
-import Step1DealerSale from '../../components/VehicleSale/Step1DealerSale';
 import Step2Customer from '../../components/VehicleSale/Step2Customer';
 import Step3Vehicle from '../../components/VehicleSale/Step3Vehicle';
 import Step7Payment from '../../components/VehicleSale/Step7Payment';
@@ -80,7 +79,7 @@ export default function VehicleSaleWizard() {
 
   const handleSave = async () => {
     // Validate the required steps regardless of current position; jump to the first failure.
-    for (const s of [0, 1, 2]) {
+    for (const s of [0, 1, 2]) {   // Customer, Vehicle, Payment
       const errs = validateStep(s, form);
       if (Object.keys(errs).length) {
         setErrors(errs);
@@ -108,7 +107,6 @@ export default function VehicleSaleWizard() {
 
   const stepProps = { form, setForm, setTop, setNested, errors };
   const STEP_COMPONENTS = [
-    <Step1DealerSale {...stepProps} />,
     <Step2Customer {...stepProps} />,
     <Step3Vehicle {...stepProps} />,
     <Step7Payment {...stepProps} />,

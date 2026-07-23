@@ -5,6 +5,8 @@ const superAdminSchema = new mongoose.Schema({
   name:      { type: String, required: true },
   email:     { type: String, required: true, unique: true, lowercase: true },
   password:  { type: String, required: true },
+  brandName: { type: String },   // display name in the super-admin sidebar (e.g. "RECKON MOTORS")
+  logoUrl:   { type: String },   // uploaded super-admin logo (raster image only, no SVG)
   active:    { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now }
 });

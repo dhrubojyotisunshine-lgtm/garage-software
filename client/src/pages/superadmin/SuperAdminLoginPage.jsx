@@ -1,7 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Shield } from 'lucide-react';
 import useSuperAdminStore from '../../store/superAdminStore';
+import { fetchPublicBranding } from '../../api/superAdmin';
+import { assetUrl } from '../../utils/asset';
+
+// Shown until (or unless) a brand name / logo is set in Super Admin → Profile.
+const DEFAULT_BRAND = 'RECKON MOTORS';
 
 export default function SuperAdminLoginPage() {
   const navigate = useNavigate();
@@ -10,6 +15,18 @@ export default function SuperAdminLoginPage() {
   const [showPw, setShowPw]   = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
+
+  // Branding from Super Admin → Profile. Failure is non-fatal — the built-in
+  // Shield icon + DEFAULT_BRAND remain so login always renders.
+  const [brand, setBrand] = useState({ brandName: '', logoUrl: '' });
+  useEffect(() => {
+    fetchPublicBranding()
+      .then(({ data }) => setBrand({ brandName: data?.brandName || '', logoUrl: data?.logoUrl || '' }))
+      .catch(() => {});
+  }, []);
+
+  const brandName = brand.brandName || DEFAULT_BRAND;
+  const brandLogo = brand.logoUrl ? assetUrl(brand.logoUrl) : null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,11 +43,13 @@ export default function SuperAdminLoginPage() {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <Shield size={32} className="text-white" />
+          <div className="w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center mx-auto mb-3 overflow-hidden">
+            {brandLogo
+              ? <img src={brandLogo} alt="" className="w-full h-full object-cover" />
+              : <Shield size={32} className="text-white" />}
           </div>
           <h1 className="text-2xl font-bold text-gray-800">Super Admin</h1>
-          <p className="text-gray-500 text-sm mt-1">RECKON MOTORS Franchise Portal</p>
+          <p className="text-gray-500 text-sm mt-1">{brandName} Franchise Portal</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

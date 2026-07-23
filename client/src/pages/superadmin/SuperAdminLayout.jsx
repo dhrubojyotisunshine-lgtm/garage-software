@@ -1,13 +1,20 @@
 import { useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Building2, LogOut, Shield } from 'lucide-react';
+import { LayoutDashboard, Building2, LogOut, Shield, UserCog } from 'lucide-react';
 import useSuperAdminStore from '../../store/superAdminStore';
 import { useAutoTooltips } from '../../hooks/useAutoTooltips';
 import TooltipLayer from '../../components/ui/TooltipLayer';
+import { assetUrl } from '../../utils/asset';
+
+// Toggle to show/hide the Profile menu item in the super-admin sidebar.
+// false = hidden (page still reachable directly at /superadmin/profile).
+// Set to true whenever you want it visible again.
+const SHOW_PROFILE_NAV = true;
 
 const NAV = [
   { to: '/superadmin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/superadmin/garages',   icon: Building2,        label: 'Franchises' },
+  ...(SHOW_PROFILE_NAV ? [{ to: '/superadmin/profile', icon: UserCog, label: 'Profile' }] : []),
 ];
 
 export default function SuperAdminLayout() {
@@ -27,11 +34,13 @@ export default function SuperAdminLayout() {
       {/* Sidebar */}
       <aside className="w-56 bg-gray-900 text-white flex flex-col flex-shrink-0">
         <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-700">
-          <div className="w-9 h-9 bg-red-600 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Shield size={18} className="text-white" />
+          <div className="w-9 h-9 bg-red-600 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {admin?.logoUrl
+              ? <img src={assetUrl(admin.logoUrl)} alt="logo" className="w-full h-full object-cover" />
+              : <Shield size={18} className="text-white" />}
           </div>
           <div>
-            <div className="text-sm font-bold leading-tight">RECKON MOTORS</div>
+            <div className="text-sm font-bold leading-tight">{admin?.brandName || 'RECKON MOTORS'}</div>
             <div className="text-[10px] text-gray-400">Super Admin</div>
           </div>
         </div>
