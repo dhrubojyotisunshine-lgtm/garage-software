@@ -8,7 +8,7 @@ import useAuthStore from '../../store/authStore';
 import { firstAllowedPath } from '../../components/Layout/Sidebar';
 import { useToast } from '../../components/ui/Toast';
 import { fetchPublicBranding } from '../../api/superAdmin';
-import { assetUrl } from '../../utils/asset';
+import { assetUrlOrDefault } from '../../utils/asset';
 
 // Shown until (or unless) the Super Admin sets a brand name / logo in their Profile.
 const DEFAULT_BRAND = 'RECKON MOTORS';
@@ -38,7 +38,9 @@ export default function LoginPage() {
   }, []);
 
   const brandName = brand.brandName || DEFAULT_BRAND;
-  const brandLogo = brand.logoUrl ? assetUrl(brand.logoUrl) : null;
+  // Uploaded branding logo → shipped default image → Wrench icon.
+  const brandLogo = assetUrlOrDefault(brand.logoUrl);
+  const [logoBroken, setLogoBroken] = useState(false);
 
   /* ── Garage login (react-hook-form) ── */
   const { register, handleSubmit, formState: { errors } } = useForm({
@@ -78,9 +80,10 @@ export default function LoginPage() {
       <div className="hidden lg:flex w-1/2 bg-sidebar-bg flex-col justify-between p-12">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center overflow-hidden">
-            {brandLogo
-              ? <img src={brandLogo} alt="" className="w-full h-full object-cover" />
-              : <Wrench size={20} className="text-white" />}
+            {logoBroken
+              ? <Wrench size={20} className="text-white" />
+              : <img src={brandLogo} alt="" onError={() => setLogoBroken(true)}
+                     className="w-full h-full object-cover" />}
           </div>
           <div>
             <div className="font-heading font-bold text-white text-xl">{brandName}</div>

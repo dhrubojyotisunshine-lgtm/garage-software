@@ -3,7 +3,7 @@ import { Shield, Upload, Save, KeyRound } from 'lucide-react';
 import { superAdminApi } from '../../api/superAdmin';
 import useSuperAdminStore from '../../store/superAdminStore';
 import { useToast } from '../../components/ui/Toast';
-import { assetUrl } from '../../utils/asset';
+import { assetUrlOrDefault } from '../../utils/asset';
 
 // Toggle for the Super Admin ACCOUNT section — Admin Name, Email and the whole
 // Change Password card. false = hidden AND not submitted, so the client can only
@@ -93,7 +93,9 @@ export default function SuperAdminProfile() {
     } finally { setPwdSaving(false); }
   };
 
-  const logoSrc = admin?.logoUrl ? assetUrl(admin.logoUrl) : null;
+  // Shows the uploaded logo, else the shipped default.
+  const logoSrc = assetUrlOrDefault(admin?.logoUrl);
+  const [logoBroken, setLogoBroken] = useState(false);
   const input = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500';
   const label = 'block text-xs font-medium text-gray-600 mb-1';
 
@@ -114,9 +116,10 @@ export default function SuperAdminProfile() {
         {/* Logo */}
         <div className="flex items-center gap-4 mb-5">
           <div className="w-16 h-16 rounded-xl bg-red-600 flex items-center justify-center overflow-hidden flex-shrink-0">
-            {logoSrc
-              ? <img src={logoSrc} alt="logo" className="w-full h-full object-cover" />
-              : <Shield size={26} className="text-white" />}
+            {logoBroken
+              ? <Shield size={26} className="text-white" />
+              : <img src={logoSrc} alt="logo" onError={() => setLogoBroken(true)}
+                     className="w-full h-full object-cover" />}
           </div>
           <div>
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden onChange={onPickLogo} />

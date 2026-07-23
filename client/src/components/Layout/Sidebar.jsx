@@ -6,14 +6,10 @@ import {
   Database, Settings, ChevronDown, ChevronRight, Wrench, Users, UserCircle, BellRing, Car, ScrollText
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { assetUrl } from '../../utils/asset';
+import { assetUrlOrDefault } from '../../utils/asset';
 import useAuthStore from '../../store/authStore';
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-
-// Shipped fallback logo (server/uploads/default_logo.png), used when neither the
-// super-admin branding logo nor the garage's own workshop logo is set.
-const DEFAULT_LOGO = '/uploads/default_logo.png';
 
 const ALL_NAV = [
   { key: 'dashboard',    label: 'Dashboard',    icon: LayoutDashboard, path: '/dashboard' },
@@ -80,8 +76,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onNavigate })
   // Brand logo precedence: super-admin branding logo → the garage's own workshop
   // logo → the bundled default (server/uploads/default_logo.png), so the sidebar
   // never renders empty when nobody has uploaded anything.
-  const rawLogo = garage?.branding?.logoUrl || garage?.logoUrl || DEFAULT_LOGO;
-  const logoUrl = assetUrl(rawLogo);
+  const logoUrl = assetUrlOrDefault(garage?.branding?.logoUrl || garage?.logoUrl);
   // If even the default file is missing on the server, fall back to the icon
   // rather than showing a broken-image box.
   const [logoError, setLogoError] = useState(false);

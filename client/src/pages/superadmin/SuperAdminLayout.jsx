@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Building2, LogOut, Shield, UserCog } from 'lucide-react';
 import useSuperAdminStore from '../../store/superAdminStore';
 import { useAutoTooltips } from '../../hooks/useAutoTooltips';
 import TooltipLayer from '../../components/ui/TooltipLayer';
-import { assetUrl } from '../../utils/asset';
+import { assetUrlOrDefault } from '../../utils/asset';
 
 // Toggle to show/hide the Profile menu item in the super-admin sidebar.
 // false = hidden (page still reachable directly at /superadmin/profile).
@@ -20,6 +20,7 @@ const NAV = [
 export default function SuperAdminLayout() {
   const { admin, token, fetchMe, logout } = useSuperAdminStore();
   const navigate = useNavigate();
+  const [logoBroken, setLogoBroken] = useState(false);
   useAutoTooltips();
 
   useEffect(() => {
@@ -35,9 +36,13 @@ export default function SuperAdminLayout() {
       <aside className="w-56 bg-gray-900 text-white flex flex-col flex-shrink-0">
         <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-700">
           <div className="w-9 h-9 bg-red-600 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {admin?.logoUrl
-              ? <img src={assetUrl(admin.logoUrl)} alt="logo" className="w-full h-full object-cover" />
-              : <Shield size={18} className="text-white" />}
+            {/* Falls back to the shipped default logo; the Shield shows only if
+                even that file is missing on the server. */}
+            {logoBroken
+              ? <Shield size={18} className="text-white" />
+              : <img src={assetUrlOrDefault(admin?.logoUrl)} alt="logo"
+                     onError={() => setLogoBroken(true)}
+                     className="w-full h-full object-cover" />}
           </div>
           <div>
             <div className="text-sm font-bold leading-tight">{admin?.brandName || 'RECKON MOTORS'}</div>

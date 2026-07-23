@@ -20,9 +20,6 @@ out/
 .output/
 build/Release
 
-# Uploads
-#server/uploads/
-
 # Uploads — ignore runtime uploads, but keep the shipped default logo so it
 server/uploads/*
 !server/uploads/default_logo.png

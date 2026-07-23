@@ -3,13 +3,14 @@ import { useState } from 'react';
 import useAuthStore from '../../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import { getInitials } from '../../utils/format';
-import { assetUrl } from '../../utils/asset';
+import { assetUrlOrDefault } from '../../utils/asset';
 import { cn } from '../../utils/cn';
 
 export function Topbar({ onToggleSidebar }) {
   const { garage, logout } = useAuthStore();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [picBroken, setPicBroken] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -36,9 +37,13 @@ export function Topbar({ onToggleSidebar }) {
             className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <div className="w-7 h-7 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-bold overflow-hidden">
-              {garage?.profilePicUrl
-                ? <img src={assetUrl(garage.profilePicUrl)} alt="" className="w-full h-full object-cover" />
-                : getInitials(garage?.workshopName || garage?.firstName || 'G')}
+              {/* Uploaded profile picture → shipped default image → initials
+                  (initials only if the default file is missing on the server). */}
+              {picBroken
+                ? getInitials(garage?.workshopName || garage?.firstName || 'G')
+                : <img src={assetUrlOrDefault(garage?.profilePicUrl)} alt=""
+                       onError={() => setPicBroken(true)}
+                       className="w-full h-full object-cover" />}
             </div>
             <div className="text-left hidden sm:block">
               <div className="text-xs font-semibold text-gray-800 leading-tight">

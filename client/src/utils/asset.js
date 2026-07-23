@@ -12,3 +12,13 @@ export function assetUrl(path) {
   const base = api ? api.replace(/\/api\/?$/, '') : '';
   return base + (path.startsWith('/') ? path : '/' + path);
 }
+
+// Shipped fallback image (server/uploads/default_logo.png). Used wherever a logo
+// or profile picture slot would otherwise be empty — i.e. neither the super admin
+// nor the garage owner has uploaded anything.
+export const DEFAULT_LOGO = '/uploads/default_logo.png';
+
+// Resolve `path` if set, else the shipped default. Returns a browser-ready URL.
+export function assetUrlOrDefault(path) {
+  return assetUrl(path || DEFAULT_LOGO);
+}
