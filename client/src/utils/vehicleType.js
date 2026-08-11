@@ -21,6 +21,20 @@ export function vehicleTypeOf(models, v) {
     const ft = firstTok(v.modelName);
     m = models.find(x => norm(x.makeName) === mk && firstTok(x.name) === ft);
   }
+  // 3. makeName is empty but the make is embedded at the start of the model name
+  //    (imported rows like modelName = "Honda Activa 125 BS6", makeName = "").
+  if (!m && mn && !mk) {
+    const makeNames = [...new Set(models.map(x => norm(x.makeName)).filter(Boolean))];
+    // Longest matching make-prefix wins (so "Maruti Suzuki" beats "Maruti").
+    const hit = makeNames
+      .filter(name => mn === name || mn.startsWith(name + ' '))
+      .sort((a, b) => b.length - a.length)[0];
+    if (hit) {
+      const rest = mn.slice(hit.length).trim();   // e.g. "activa 125 bs6"
+      const ft = firstTok(rest) || firstTok(mn);
+      m = models.find(x => norm(x.makeName) === hit && (norm(x.name) === rest || firstTok(x.name) === ft));
+    }
+  }
   return m?.vehicleType || '';
 }
 

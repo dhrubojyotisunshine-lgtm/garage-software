@@ -91,7 +91,7 @@ function CompatibleForField({ form, setForm, makes, models, onMakeChange }) {
               className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none"
             >
               <option value="">Select Model (optional)</option>
-              {models.map(m => <option key={m._id} value={m._id}>{m.name} {m.variant || ''}</option>)}
+              {models.map(m => <option key={m._id} value={m._id}>{m.name} {m.variant || ''}{m.vehicleType ? ` (${m.vehicleType})` : ''}</option>)}
             </select>
             <button type="button" onClick={addVehicle} disabled={!form._selectedMake}
               className="px-3 py-1.5 bg-red-500 text-white rounded text-xs font-medium hover:bg-red-600 disabled:opacity-50">
@@ -305,6 +305,116 @@ function LubeModal({ item, onClose, onSaved, makes }) {
       <button onClick={handleSave} disabled={saving}
         className="w-full py-2.5 bg-gradient-to-r from-red-400 to-red-500 text-white rounded font-medium text-sm hover:from-red-500 hover:to-red-600 disabled:opacity-60 transition-all">
         {saving ? 'Saving...' : item ? 'Update Lube' : 'Create Lube'}
+      </button>
+    </ModalShell>
+  );
+}
+
+/* ── Add Spare / Lube (combined) Modal ──────────────────────────
+   One form for both Spare & Lube. The chosen Unit decides the category:
+   a Lube unit (ltr/ml/kg/gm) is saved as a Lube, any other unit as a Spare.
+   The user never picks a category — it follows the unit. */
+function SpareLubeModal({ onClose, onSaved, makes }) {
+  const [form, setForm] = useState({ allVehicles: false, unit: 'units', subCategory: 'Frequent Items', currentStock: 1, lowerLimit: 0, purchasePrice: 0, sellingPrice: 0 });
+  const [models, setModels] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  const isLube = UNIT_OPTIONS_LUBE.includes(form.unit);
+  const total = (form.currentStock || 0) * (form.sellingPrice || 0);
+
+  const onMakeChange = async (makeId) => {
+    if (!makeId) return setModels([]);
+    const { data } = await inventoryApi.listVehicleModels(makeId);
+    setModels(data);
+  };
+
+  const handleSave = async () => {
+    if (!form.partNumber?.trim()) return toast({ title: 'Number is required', variant: 'error' });
+    setSaving(true);
+    try {
+      const payload = { ...form };
+      if (isLube) { delete payload.subCategory; await inventoryApi.createLube(payload); }
+      else        { await inventoryApi.createSpare(payload); }
+      toast({ title: `${isLube ? 'Lube' : 'Spare'} created`, variant: 'success' });
+      onSaved();
+    } catch (e) {
+      toast({ title: 'Error', description: e.response?.data?.message || 'Save failed', variant: 'error' });
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <ModalShell title="Add Spare / Lube" total={total} onClose={onClose}>
+      <div className={sectionTitle}>Part Details</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+        <div>
+          <label className={labelCls}>Spare / Lube Number <span className="text-red-500">*</span></label>
+          <input value={form.partNumber || ''} onChange={e => setForm(f => ({ ...f, partNumber: e.target.value }))} className={inputCls} placeholder="Spare / Lube Number" />
+          {!form.partNumber?.trim() && <p className="text-red-500 text-xs mt-0.5">Number is required.</p>}
+        </div>
+        <div>
+          <label className={labelCls}>Spare / Lube Name</label>
+          <input value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} placeholder="Spare / Lube Name" />
+        </div>
+      </div>
+      <div className="mb-3">
+        <label className={labelCls}>Spare / Lube Company</label>
+        <input value={form.company || ''} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} className={inputCls} placeholder="Search Spare / Lube Company" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+        <div>
+          <label className={labelCls}>Unit</label>
+          <select value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} className={inputCls}>
+            {UNIT_OPTIONS_SPARE.map(u => <option key={`s-${u}`} value={u}>{u} (Spare)</option>)}
+            {UNIT_OPTIONS_LUBE.map(u => <option key={`l-${u}`} value={u}>{u} (Lube)</option>)}
+          </select>
+          <p className="text-[11px] text-gray-400 mt-0.5">Saved as {isLube ? 'Lube' : 'Spare'} (based on the unit).</p>
+        </div>
+        {!isLube && (
+          <div>
+            <label className={labelCls}>Sub Category</label>
+            <select value={form.subCategory || 'Frequent Items'} onChange={e => setForm(f => ({ ...f, subCategory: e.target.value }))} className={inputCls}>
+              {SUBCATEGORY_SPARE.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+
+      <div className="mb-4">
+        <CompatibleForField form={form} setForm={setForm} makes={makes} models={models} onMakeChange={onMakeChange} />
+      </div>
+
+      <div className={sectionTitle}>Stock Details</div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div>
+          <label className={labelCls}>Quantity</label>
+          <input type="number" min="0" value={form.currentStock ?? 1} onChange={e => setForm(f => ({ ...f, currentStock: Number(e.target.value) }))} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Lower Limit</label>
+          <input type="number" min="0" value={form.lowerLimit ?? 0} onChange={e => setForm(f => ({ ...f, lowerLimit: Number(e.target.value) }))} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Rack Number</label>
+          <input value={form.rackNumber || ''} onChange={e => setForm(f => ({ ...f, rackNumber: e.target.value }))} className={inputCls} placeholder="Rack No." />
+        </div>
+      </div>
+
+      <div className={sectionTitle}>Pricing Details</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+        <div>
+          <label className={labelCls}>Purchase Price</label>
+          <input type="number" min="0" value={form.purchasePrice ?? 0} onChange={e => setForm(f => ({ ...f, purchasePrice: Number(e.target.value) }))} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Selling Price <span className="text-red-500">*</span></label>
+          <input type="number" min="0" value={form.sellingPrice ?? 0} onChange={e => setForm(f => ({ ...f, sellingPrice: Number(e.target.value) }))} className={inputCls} />
+        </div>
+      </div>
+
+      <button onClick={handleSave} disabled={saving}
+        className="w-full py-2.5 bg-gradient-to-r from-red-400 to-red-500 text-white rounded font-medium text-sm hover:from-red-500 hover:to-red-600 disabled:opacity-60 transition-all">
+        {saving ? 'Saving...' : `Create ${isLube ? 'Lube' : 'Spare'}`}
       </button>
     </ModalShell>
   );
@@ -755,7 +865,7 @@ export default function StockPage() {
         </div>
         {stockPerm('canAdd') && (
         <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setModal({ type: 'choose' })}
+          <button onClick={() => setModal({ type: 'sparelube' })}
             className="px-3 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary-600 flex items-center gap-1">
             + Add Spare Parts
           </button>
@@ -958,26 +1068,8 @@ export default function StockPage() {
 
       <Pagination page={page} pages={totalPages} total={totalFiltered} limit={limit} onPage={setPage} onLimit={setLimit} />
 
-      {/* Add Spare Parts — pick a category, then the item is created & stored under it */}
-      {modal?.type === 'choose' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setModal(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="font-semibold text-gray-800 mb-1">Add Spare Parts</h3>
-            <p className="text-sm text-gray-500 mb-4">Select a category — the item is saved under that single category.</p>
-            <div className="grid grid-cols-3 gap-2">
-              {[['spare', 'Spare'], ['lube', 'Lube'], ['job', 'Job']].map(([t, l]) => (
-                <button key={t} onClick={() => setModal({ type: t })}
-                  className="px-3 py-4 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-primary/40">
-                  {l}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Modals */}
+      {modal?.type === 'sparelube' && <SpareLubeModal onClose={() => setModal(null)} onSaved={onSaved} makes={makes} />}
       {modal?.type === 'spare' && <SpareModal item={modal.item} onClose={() => setModal(null)} onSaved={onSaved} makes={makes} />}
       {modal?.type === 'lube'  && <LubeModal  item={modal.item} onClose={() => setModal(null)} onSaved={onSaved} makes={makes} />}
       {modal?.type === 'job'   && <JobModal   item={modal.item} onClose={() => setModal(null)} onSaved={onSaved} makes={makes} />}

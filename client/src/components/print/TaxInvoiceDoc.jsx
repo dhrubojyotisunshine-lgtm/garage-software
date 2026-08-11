@@ -123,64 +123,80 @@ export default function TaxInvoiceDoc({
           </tbody>
         </table>
 
-        {/* Items */}
-        <table style={{ width: '100%', marginBottom: 12 }}>
-          <thead>
-            <tr>
-              {['#', 'Particulars', 'HSN/SAC', 'Qty', 'Unit Price(Rs.)', 'Total Amount(Rs.)', 'Discount', 'Taxable Amount(Rs.)', 'CGST(Rs.)', 'SGST(Rs.)', 'Amount(Rs.)'].map((h, i) => (
-                <th key={h} style={th({ textAlign: i >= 3 ? 'right' : 'left', fontSize: 10 })}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {(() => {
-              // Two distinct sections: Spare Parts (Spare + Lube) and Labour Charges (Labour + Outsource).
-              const isPart = (it) => it.itemType === 'Spare' || it.itemType === 'Lube';
-              const rows = [];
-              let n = 0;
-              const section = (label, list) => {
-                if (!list.length) return;
-                rows.push(
-                  <tr key={`sec-${label}`}>
-                    <td colSpan={11} style={td({ fontWeight: 700, background: '#eef2f7', fontSize: 10.5 })}>{label}</td>
-                  </tr>
-                );
-                list.forEach(it => {
-                  n++;
-                  const disc = it.discount
-                    ? (it.discountType === 'percent' ? `${it.discount} %` : `₹${it.discount}`)
-                    : '0 %';
-                  rows.push(
-                    <tr key={`row-${n}`}>
-                      <td style={td({ textAlign: 'center', color: '#64748b' })}>{n}</td>
+        {/* Items — Spare Parts and Labour Charges in separate tables, each with its
+            own sub-total; a grand total combines them. */}
+        {(() => {
+          const HEADERS = ['#', 'Particulars', 'HSN/SAC', 'Qty', 'Unit Price(Rs.)', 'Total Amount(Rs.)', 'Discount', 'Taxable Amount(Rs.)', 'CGST(Rs.)', 'SGST(Rs.)', 'Amount(Rs.)'];
+          const COLW = ['4%', '20%', '7%', '8%', '9%', '9%', '6%', '10%', '8%', '8%', '11%'];
+          const isPart = (it) => it.itemType === 'Spare' || it.itemType === 'Lube';
+          const spares = calc.filter(isPart);
+          const labour = calc.filter(it => !isPart(it));
+          const gsum = (list, f) => list.reduce((s, r) => s + (r[f] || 0), 0);
+          const discOf = (it) => it.discount ? (it.discountType === 'percent' ? `${it.discount} %` : `₹${it.discount}`) : '0 %';
+          const Colg = () => <colgroup>{COLW.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>;
+
+          const SectionTable = (label, list) => {
+            if (!list.length) return null;
+            return (
+              <table key={label} style={{ width: '100%', marginBottom: 10, tableLayout: 'fixed' }}>
+                <Colg />
+                <thead>
+                  <tr><td colSpan={11} style={td({ fontWeight: 700, background: '#dbe4ee', fontSize: 11 })}>{label}</td></tr>
+                  <tr>{HEADERS.map((h, i) => <th key={h} style={th({ textAlign: i >= 3 ? 'right' : 'left', fontSize: 10 })}>{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {list.map((it, i) => (
+                    <tr key={i}>
+                      <td style={td({ textAlign: 'center', color: '#64748b' })}>{i + 1}</td>
                       <td style={td({ fontWeight: 500 })}>{it.name || '—'}</td>
                       <td style={td()}>{it.hsn || ''}</td>
                       <td style={td({ textAlign: 'right' })}>{it.qty ?? 1} {it.unit || 'units'}</td>
                       <td style={td({ textAlign: 'right' })}>{fmt(it.unitPrice)} <span style={{ color: '#94a3b8', fontSize: 9 }}>(Incl)</span></td>
                       <td style={td({ textAlign: 'right' })}>{fmt((it.qty ?? 1) * (it.unitPrice || 0))}</td>
-                      <td style={td({ textAlign: 'right' })}>{disc}</td>
+                      <td style={td({ textAlign: 'right' })}>{discOf(it)}</td>
                       <td style={td({ textAlign: 'right' })}>{fmt(it.taxable)}</td>
                       <td style={td({ textAlign: 'right' })}>{fmt(it.cgst)} <span style={{ color: '#94a3b8', fontSize: 9 }}>({half}%)</span></td>
                       <td style={td({ textAlign: 'right' })}>{fmt(it.sgst)} <span style={{ color: '#94a3b8', fontSize: 9 }}>({half}%)</span></td>
                       <td style={td({ textAlign: 'right', fontWeight: 600 })}>{fmt(it.amount)}</td>
                     </tr>
-                  );
-                });
-              };
-              section('Spare Parts', calc.filter(isPart));
-              section('Labour Charges', calc.filter(it => !isPart(it)));
-              return rows;
-            })()}
-            {calc.length === 0 && <tr><td style={td({ textAlign: 'center', color: '#94a3b8' })} colSpan={11}>No items</td></tr>}
-            <tr>
-              <td style={td({ fontWeight: 700, background: '#f1f5f9' })} colSpan={7}>Total(Rs.)</td>
-              <td style={td({ textAlign: 'right', fontWeight: 700, background: '#f1f5f9' })}>{fmt(tTaxable)}</td>
-              <td style={td({ textAlign: 'right', fontWeight: 700, background: '#f1f5f9' })}>{fmt(tCgst)}</td>
-              <td style={td({ textAlign: 'right', fontWeight: 700, background: '#f1f5f9' })}>{fmt(tSgst)}</td>
-              <td style={td({ textAlign: 'right', fontWeight: 700, background: '#f1f5f9' })}>{fmt(tAmount)}</td>
-            </tr>
-          </tbody>
-        </table>
+                  ))}
+                  <tr>
+                    <td style={td({ fontWeight: 700, background: '#f1f5f9' })} colSpan={7}>Sub Total — {label} (Rs.)</td>
+                    <td style={td({ textAlign: 'right', fontWeight: 700, background: '#f1f5f9' })}>{fmt(gsum(list, 'taxable'))}</td>
+                    <td style={td({ textAlign: 'right', fontWeight: 700, background: '#f1f5f9' })}>{fmt(gsum(list, 'cgst'))}</td>
+                    <td style={td({ textAlign: 'right', fontWeight: 700, background: '#f1f5f9' })}>{fmt(gsum(list, 'sgst'))}</td>
+                    <td style={td({ textAlign: 'right', fontWeight: 700, background: '#f1f5f9' })}>{fmt(gsum(list, 'amount'))}</td>
+                  </tr>
+                </tbody>
+              </table>
+            );
+          };
+
+          return (
+            <>
+              {SectionTable('Spare Parts', spares)}
+              {SectionTable('Labour Charges', labour)}
+              {calc.length === 0 && (
+                <table style={{ width: '100%', marginBottom: 10 }}><tbody>
+                  <tr><td style={td({ textAlign: 'center', color: '#94a3b8' })}>No items</td></tr>
+                </tbody></table>
+              )}
+              {/* Grand Total (Spare Parts + Labour Charges) */}
+              <table style={{ width: '100%', marginBottom: 12, tableLayout: 'fixed' }}>
+                <Colg />
+                <tbody>
+                  <tr>
+                    <td style={td({ fontWeight: 800, background: '#e2e8f0' })} colSpan={7}>Grand Total (Rs.)</td>
+                    <td style={td({ textAlign: 'right', fontWeight: 800, background: '#e2e8f0' })}>{fmt(tTaxable)}</td>
+                    <td style={td({ textAlign: 'right', fontWeight: 800, background: '#e2e8f0' })}>{fmt(tCgst)}</td>
+                    <td style={td({ textAlign: 'right', fontWeight: 800, background: '#e2e8f0' })}>{fmt(tSgst)}</td>
+                    <td style={td({ textAlign: 'right', fontWeight: 800, background: '#e2e8f0' })}>{fmt(tAmount)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </>
+          );
+        })()}
 
         {/* Tax details | Bill amount */}
         <table style={{ width: '100%', marginBottom: 0 }}>
