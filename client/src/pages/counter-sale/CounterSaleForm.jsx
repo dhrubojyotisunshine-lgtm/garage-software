@@ -10,6 +10,7 @@ import { useToast } from '../../components/ui/Toast';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { getInitials } from '../../utils/format';
+import { vehicleTypeOf } from '../../utils/vehicleType';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -510,7 +511,7 @@ export default function CounterSaleForm() {
               {/* Selected vehicle chip */}
               {selectedVehicle && (
                 <div className="mt-3 text-xs text-gray-500 bg-white rounded-lg p-2 border border-border">
-                  <span className="font-medium">{selectedVehicle.makeName} {selectedVehicle.modelName}</span>
+                  <span className="font-medium">{selectedVehicle.makeName} {selectedVehicle.modelName}{(() => { const t = vehicleTypeOf(vehicleModels, selectedVehicle); return t ? ` (${t})` : ''; })()}</span>
                   {selectedVehicle.vehicleNo && (
                     <span className="ml-2 font-mono bg-gray-100 px-1.5 py-0.5 rounded">{selectedVehicle.vehicleNo}</span>
                   )}

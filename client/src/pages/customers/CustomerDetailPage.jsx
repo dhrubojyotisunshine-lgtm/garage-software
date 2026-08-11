@@ -10,6 +10,8 @@ import { customersApi } from '../../api/customers';
 import { useToast } from '../../components/ui/Toast';
 import { getInitials } from '../../utils/format';
 import CustomerEditModal from '../../components/CustomerEditModal';
+import { useVehicleModels } from '../../hooks/useVehicleModels';
+import { vehicleTypeOf } from '../../utils/vehicleType';
 
 const STATUS_OPTIONS = ['Lead', 'Active', 'VIP', 'Inactive'];
 const STATUS_CONFIG  = {
@@ -43,6 +45,8 @@ export default function CustomerDetailPage() {
   const { toast } = useToast();
 
   const [customer, setCustomer] = useState(null);
+  const models = useVehicleModels();
+  const typeSuffix = (v) => { const t = vehicleTypeOf(models, v); return t ? ` (${t})` : ''; };
   const [stats, setStats]       = useState({});
   const [jobcards, setJobcards] = useState([]);
   const [counters, setCounters] = useState([]);
@@ -206,7 +210,7 @@ export default function CustomerDetailPage() {
               {customer.vehicles.slice(0, 3).map((v, i) => (
                 <div key={i} className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 rounded-lg px-3 py-1.5">
                   <Car size={12} className="text-gray-400" />
-                  {v.vehicleNo || `${v.makeName||''} ${v.modelName||''}`.trim() || 'Vehicle'}
+                  {v.vehicleNo || `${v.makeName||''} ${v.modelName||''}`.trim() || 'Vehicle'}{typeSuffix(v)}
                 </div>
               ))}
             </div>
@@ -271,7 +275,7 @@ export default function CustomerDetailPage() {
                           <div className="flex justify-between">
                             <div>
                               <p className="text-sm font-medium text-gray-800">{item.jobcardNumber}</p>
-                              <p className="text-xs text-gray-400">{[item.vehicleMake, item.vehicleModel].filter(Boolean).join(' ')} · {item.statusLabel}</p>
+                              <p className="text-xs text-gray-400">{[item.vehicleMake, item.vehicleModel].filter(Boolean).join(' ')}{typeSuffix({ makeName: item.vehicleMake, modelName: item.vehicleModel })} · {item.statusLabel}</p>
                             </div>
                             <span className="text-sm font-semibold text-gray-700">{fmtINR(item.billAmount)}</span>
                           </div>
@@ -344,7 +348,7 @@ export default function CustomerDetailPage() {
                 {customer.vehicles.map((v, i) => (
                   <div key={i} className="bg-gray-50 rounded-xl px-3 py-2.5">
                     <div className="font-medium text-sm text-gray-800">{v.vehicleNo || '—'}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{[v.makeName, v.modelName, v.year].filter(Boolean).join(' · ')}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{[v.makeName, v.modelName, v.year].filter(Boolean).join(' · ')}{typeSuffix(v)}</div>
                   </div>
                 ))}
               </div>

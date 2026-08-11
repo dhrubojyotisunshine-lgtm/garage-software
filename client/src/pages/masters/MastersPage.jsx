@@ -22,7 +22,8 @@ const MASTER_TABS = [
     key: 'vehicle-models', label: 'Vehicle Models', fields: [
       { name: 'name', label: 'Model Name', required: true },
       { name: 'makeId', label: 'Make', type: 'make-select', required: true },
-      { name: 'variant', label: 'Variant' }
+      { name: 'variant', label: 'Variant' },
+      { name: 'vehicleType', label: 'Type', type: 'select', options: ['2W', '4W'], required: true }
     ]
   },
   { key: 'customer-voice', label: 'Customer Voice', fields: [{ name: 'name', label: 'Option Name', required: true }] }
@@ -128,7 +129,14 @@ function MasterTable({ entity, tab, makes }) {
             ) : paged.map((item, idx) => (
               <tr key={item._id} className="border-b border-border hover:bg-gray-50 last:border-0">
                 <td className="py-3 px-4 text-gray-500">{(page - 1) * limit + idx + 1}</td>
-                <td className="py-3 px-4 font-medium text-gray-800">{item.name}</td>
+                <td className="py-3 px-4 font-medium text-gray-800">
+                  {item.name}
+                  {entity === 'vehicle-models' && (
+                    <span className={`ml-1 text-xs font-normal ${(item.vehicleType || '2W') === '4W' ? 'text-blue-600' : 'text-green-600'}`}>
+                      ({item.vehicleType || '2W'})
+                    </span>
+                  )}
+                </td>
                 {entity === 'vehicle-models' && <td className="py-3 px-4 text-gray-500">{getMakeName(item.makeId)}</td>}
                 {entity === 'vehicle-models' && <td className="py-3 px-4 text-gray-500">{item.variant || '—'}</td>}
                 {entity === 'jobcard-statuses' && (

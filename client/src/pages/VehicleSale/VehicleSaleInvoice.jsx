@@ -6,6 +6,8 @@ import useAuthStore from '../../store/authStore';
 import { useToast } from '../../components/ui/Toast';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { downloadInvoicePdf } from './invoicePdf';
+import { useVehicleModels } from '../../hooks/useVehicleModels';
+import { vehicleTypeOf } from '../../utils/vehicleType';
 
 function Row({ label, value, strong }) {
   return (
@@ -23,6 +25,7 @@ export default function VehicleSaleInvoice() {
   const { garage } = useAuthStore();
   const [sale, setSale] = useState(null);
   const [loading, setLoading] = useState(true);
+  const models = useVehicleModels();
 
   useEffect(() => {
     vehicleSaleApi.get(id)
@@ -98,7 +101,7 @@ export default function VehicleSaleInvoice() {
               {(sale.vehicles || []).map((v, i) => (
                 <tr key={i} className="border-b border-gray-100 last:border-0 text-center">
                   <td className="py-2 px-3 text-gray-500">{i + 1}</td>
-                  <td className="py-2 px-3 text-gray-800 font-medium">{v.vehicleModel || '-'}</td>
+                  <td className="py-2 px-3 text-gray-800 font-medium">{(() => { const n = v.vehicleModel || ''; if (!n) return '-'; const t = vehicleTypeOf(models, { modelName: n }); return t ? `${n} (${t})` : n; })()}</td>
                   <td className="py-2 px-3 text-gray-600">{v.variant || '-'}</td>
                   <td className="py-2 px-3 text-gray-600">{v.color || '-'}</td>
                   <td className="py-2 px-3 text-gray-600 text-xs">{v.chassisNumber || '-'}</td>

@@ -5,7 +5,7 @@ import {
   X, Plus, Pencil, Search, Camera, Wrench,
   MessageSquare, Package, Save, Printer,
   User, Car, MessageCircle, AlertTriangle,
-  CheckCircle, Lock, Trash2, ClipboardList
+  CheckCircle, Lock, Trash2, ClipboardList, FileText
 } from 'lucide-react';
 import { jobcardsApi } from '../../api/jobcards';
 import { buildInvoiceWhatsappUrl } from '../../utils/whatsapp';
@@ -247,22 +247,24 @@ export default function JobcardFormPage() {
       .catch(() => {});
   }, [selectedVehicle, isEdit]);
 
-  // Item search — searches only the ACTIVE tab's item type (Jobs / Spare / Lube),
-  // so the Spare tab lists spares only, the Lube tab lubes only, etc.
+  // Item search — searches across ALL categories (Labour / Spare / Lube) at once,
+  // regardless of the active tab. Each result keeps its own _type so the item is
+  // still added under its single, correct category.
   useEffect(() => {
     if (itemSearch.length < 1) { setItemSearchResults([]); return; }
     const q = itemSearch.toLowerCase();
     const tag = (arr, t) => arr.map(i => ({ ...i, _type: t }));
-    const source =
-      activeItemTab === 'Labour' ? tag(labourItems, 'Labour') :
-      activeItemTab === 'Spare'  ? tag(spareItems,  'Spare')  :
-      activeItemTab === 'Lube'   ? tag(lubeItems,   'Lube')   : [];
+    const source = [
+      ...tag(labourItems, 'Labour'),
+      ...tag(spareItems,  'Spare'),
+      ...tag(lubeItems,   'Lube'),
+    ];
     const filtered = source.filter(i =>
       i.name.toLowerCase().includes(q) ||
       (i.jobCode || i.partNumber || '').toLowerCase().includes(q)
     );
     setItemSearchResults(filtered.slice(0, 12));
-  }, [itemSearch, activeItemTab, labourItems, spareItems, lubeItems]);
+  }, [itemSearch, labourItems, spareItems, lubeItems]);
 
   // A Closed jobcard is view-only unless the role has "Edit a CLOSED jobcard".
   // Owners are unaffected (perm() returns true for non-staff).
@@ -991,7 +993,7 @@ export default function JobcardFormPage() {
           <input
             value={itemSearch}
             onChange={e => activeItemTab !== 'Total' && activeItemTab !== 'Outsource' && setItemSearch(e.target.value)}
-            placeholder={activeItemTab === 'Total' ? 'Switch to Jobs / Spare / Lube tab to add items' : activeItemTab === 'Outsource' ? 'Use "Add Outsource Charge" above to add a line' : `Search ${activeItemTab === 'Labour' ? 'Jobs' : activeItemTab} items by name or code...`}
+            placeholder={activeItemTab === 'Total' ? 'Switch to Jobs / Spare / Lube tab to add items' : activeItemTab === 'Outsource' ? 'Use "Add Outsource Charge" above to add a line' : 'Search all items (Jobs / Spare / Lube) by name or code...'}
             disabled={activeItemTab === 'Total' || activeItemTab === 'Outsource'}
             className="w-full pl-8 pr-4 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-gray-50"
           />
@@ -1236,12 +1238,21 @@ export default function JobcardFormPage() {
         {/* Print / share — edit mode only */}
         {isEdit && (
           <>
-            <Button variant="outline" onClick={async () => {
-              try { await jobcardsApi.printPdf(id); }
-              catch { toast({ title: 'Failed to generate PDF', variant: 'error' }); }
-            }}>
-              <Printer size={14} /> Print Invoice
-            </Button>
+            {/* Proforma Invoice while the jobcard is still Open */}
+            {form.statusCategory === 'Open' && (
+              <Button variant="outline" onClick={() => window.open(`/invoice/${id}?mode=proforma`, '_blank')}>
+                <FileText size={14} /> Proforma Invoice
+              </Button>
+            )}
+            {/* Tax Invoice only once the jobcard is Completed or Closed */}
+            {(form.statusCategory === 'Completed' || form.statusCategory === 'Closed') && (
+              <Button variant="outline" onClick={async () => {
+                try { await jobcardsApi.printPdf(id); }
+                catch { toast({ title: 'Failed to generate PDF', variant: 'error' }); }
+              }}>
+                <Printer size={14} /> Print Invoice
+              </Button>
+            )}
             <Button variant="secondary" onClick={() => window.open(`/jobcard-worksheet/${id}`, '_blank')}>
               <ClipboardList size={14} /> Mechanic Worksheet
             </Button>

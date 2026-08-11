@@ -21,7 +21,7 @@ export default function VehicleModelPicker({ makes = [], models = [], makeId, ma
       const mName = m.makeName || makes.find(mk => mk._id === m.makeId)?.name || '';
       const full = `${mName} ${m.name}`.toLowerCase();
       if (full.includes(q) || mName.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)) {
-        results.push({ makeId: m.makeId, makeName: mName, modelId: m._id, modelName: m.name, label: `${mName} ${m.name}`.trim() });
+        results.push({ makeId: m.makeId, makeName: mName, modelId: m._id, modelName: m.name, vehicleType: m.vehicleType || '', label: `${mName} ${m.name}`.trim() });
       }
     });
     return results.slice(0, 12);
@@ -72,6 +72,9 @@ export default function VehicleModelPicker({ makes = [], models = [], makeId, ma
             >
               <span className="font-medium text-gray-800">{opt.makeName}</span>
               {opt.modelName && <span className="text-gray-500"> {opt.modelName}</span>}
+              <span className={`ml-1 ${(opt.vehicleType || '2W') === '4W' ? 'text-blue-600' : 'text-green-600'}`}>
+                ({opt.vehicleType || '2W'})
+              </span>
             </button>
           ))}
         </div>

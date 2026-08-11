@@ -133,26 +133,44 @@ export default function TaxInvoiceDoc({
             </tr>
           </thead>
           <tbody>
-            {calc.map((it, i) => {
-              const disc = it.discount
-                ? (it.discountType === 'percent' ? `${it.discount} %` : `₹${it.discount}`)
-                : '0 %';
-              return (
-                <tr key={i}>
-                  <td style={td({ textAlign: 'center', color: '#64748b' })}>{i + 1}</td>
-                  <td style={td({ fontWeight: 500 })}>{it.name || '—'}</td>
-                  <td style={td()}>{it.hsn || ''}</td>
-                  <td style={td({ textAlign: 'right' })}>{it.qty ?? 1} {it.unit || 'units'}</td>
-                  <td style={td({ textAlign: 'right' })}>{fmt(it.unitPrice)} <span style={{ color: '#94a3b8', fontSize: 9 }}>(Incl)</span></td>
-                  <td style={td({ textAlign: 'right' })}>{fmt((it.qty ?? 1) * (it.unitPrice || 0))}</td>
-                  <td style={td({ textAlign: 'right' })}>{disc}</td>
-                  <td style={td({ textAlign: 'right' })}>{fmt(it.taxable)}</td>
-                  <td style={td({ textAlign: 'right' })}>{fmt(it.cgst)} <span style={{ color: '#94a3b8', fontSize: 9 }}>({half}%)</span></td>
-                  <td style={td({ textAlign: 'right' })}>{fmt(it.sgst)} <span style={{ color: '#94a3b8', fontSize: 9 }}>({half}%)</span></td>
-                  <td style={td({ textAlign: 'right', fontWeight: 600 })}>{fmt(it.amount)}</td>
-                </tr>
-              );
-            })}
+            {(() => {
+              // Two distinct sections: Spare Parts (Spare + Lube) and Labour Charges (Labour + Outsource).
+              const isPart = (it) => it.itemType === 'Spare' || it.itemType === 'Lube';
+              const rows = [];
+              let n = 0;
+              const section = (label, list) => {
+                if (!list.length) return;
+                rows.push(
+                  <tr key={`sec-${label}`}>
+                    <td colSpan={11} style={td({ fontWeight: 700, background: '#eef2f7', fontSize: 10.5 })}>{label}</td>
+                  </tr>
+                );
+                list.forEach(it => {
+                  n++;
+                  const disc = it.discount
+                    ? (it.discountType === 'percent' ? `${it.discount} %` : `₹${it.discount}`)
+                    : '0 %';
+                  rows.push(
+                    <tr key={`row-${n}`}>
+                      <td style={td({ textAlign: 'center', color: '#64748b' })}>{n}</td>
+                      <td style={td({ fontWeight: 500 })}>{it.name || '—'}</td>
+                      <td style={td()}>{it.hsn || ''}</td>
+                      <td style={td({ textAlign: 'right' })}>{it.qty ?? 1} {it.unit || 'units'}</td>
+                      <td style={td({ textAlign: 'right' })}>{fmt(it.unitPrice)} <span style={{ color: '#94a3b8', fontSize: 9 }}>(Incl)</span></td>
+                      <td style={td({ textAlign: 'right' })}>{fmt((it.qty ?? 1) * (it.unitPrice || 0))}</td>
+                      <td style={td({ textAlign: 'right' })}>{disc}</td>
+                      <td style={td({ textAlign: 'right' })}>{fmt(it.taxable)}</td>
+                      <td style={td({ textAlign: 'right' })}>{fmt(it.cgst)} <span style={{ color: '#94a3b8', fontSize: 9 }}>({half}%)</span></td>
+                      <td style={td({ textAlign: 'right' })}>{fmt(it.sgst)} <span style={{ color: '#94a3b8', fontSize: 9 }}>({half}%)</span></td>
+                      <td style={td({ textAlign: 'right', fontWeight: 600 })}>{fmt(it.amount)}</td>
+                    </tr>
+                  );
+                });
+              };
+              section('Spare Parts', calc.filter(isPart));
+              section('Labour Charges', calc.filter(it => !isPart(it)));
+              return rows;
+            })()}
             {calc.length === 0 && <tr><td style={td({ textAlign: 'center', color: '#94a3b8' })} colSpan={11}>No items</td></tr>}
             <tr>
               <td style={td({ fontWeight: 700, background: '#f1f5f9' })} colSpan={7}>Total(Rs.)</td>

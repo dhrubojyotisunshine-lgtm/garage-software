@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { jobcardsApi } from '../../api/jobcards';
 import useAuthStore from '../../store/authStore';
 import { assetUrl } from '../../utils/asset';
+import { useVehicleModels } from '../../hooks/useVehicleModels';
+import { vehicleTypeOf } from '../../utils/vehicleType';
 
 const HEAD = '#BDD7EE';
 const BORDER = '#111111';
@@ -27,6 +29,13 @@ export default function WorksheetPage() {
   const [jc, setJc] = useState(null);
   const [history, setHistory] = useState(null);
   const [err, setErr] = useState(null);
+  const models = useVehicleModels();
+  const modelWithType = (make, model) => {
+    const n = [make, model].filter(Boolean).join(' ');
+    if (!n) return '—';
+    const t = vehicleTypeOf(models, { makeName: make, modelName: model });
+    return t ? `${n} (${t})` : n;
+  };
 
   useEffect(() => {
     (async () => {
@@ -128,7 +137,7 @@ export default function WorksheetPage() {
             <tr>
               <td style={td()}>
                 <div>Vehicle Number: {jc.vehicleNo || '—'}</div>
-                <div>Model: {[jc.vehicleMake, jc.vehicleModel].filter(Boolean).join(' ') || '—'}</div>
+                <div>Model: {modelWithType(jc.vehicleMake, jc.vehicleModel)}</div>
                 <div>In KM Reading: {jc.kmReading != null && jc.kmReading !== '' ? Number(jc.kmReading).toLocaleString('en-IN') : '0'}</div>
               </td>
               <td style={td({ textAlign: 'right' })}>
@@ -253,7 +262,7 @@ export default function WorksheetPage() {
               <tr>
                 <td style={td({ width: '50%', border: 'none' })}>
                   <div>Vehicle Number: {jc.vehicleNo || '—'}</div>
-                  <div>Model: {[jc.vehicleMake, jc.vehicleModel].filter(Boolean).join(' ') || '—'}</div>
+                  <div>Model: {modelWithType(jc.vehicleMake, jc.vehicleModel)}</div>
                   <div>Customer: {jc.customerName || '—'}</div>
                   <div>Mobile: {jc.customerMobile || '—'}</div>
                 </td>

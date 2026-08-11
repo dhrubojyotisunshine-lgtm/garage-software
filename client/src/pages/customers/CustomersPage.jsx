@@ -13,6 +13,7 @@ import { Modal } from '../../components/ui/Modal';
 import { getInitials } from '../../utils/format';
 import { customerFlag } from '../../utils/customerFlag';
 import VehicleModelPicker from '../../components/ui/VehicleModelPicker';
+import { vehicleTypeOf } from '../../utils/vehicleType';
 import CustomerEditModal from '../../components/CustomerEditModal';
 
 function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
@@ -202,7 +203,13 @@ export default function CustomersPage() {
                       {firstVehicle ? (
                         <span className="flex items-center gap-1.5">
                           <Car size={12} className="text-gray-400" />
-                          {[firstVehicle.makeName, firstVehicle.modelName].filter(Boolean).join(' ') || '—'}
+                          <span>
+                            {[firstVehicle.makeName, firstVehicle.modelName].filter(Boolean).join(' ') || '—'}
+                            {(() => {
+                              const t = vehicleTypeOf(vehicleModels, firstVehicle);
+                              return t ? <span className={`ml-1 ${t === '4W' ? 'text-blue-600' : 'text-green-600'}`}>({t})</span> : null;
+                            })()}
+                          </span>
                         </span>
                       ) : <span className="text-gray-300">—</span>}
                     </td>

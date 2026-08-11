@@ -664,9 +664,15 @@ export default function StockPage() {
   const loadItems = useCallback(async () => {
     setLoading(true);
     try {
-      const loaders = { spares: inventoryApi.listSpares, lubes: inventoryApi.listLubes, jobs: inventoryApi.listJobs, groups: inventoryApi.listGroups };
-      const { data } = await loaders[activeTab]();
-      setItems(data);
+      if (activeTab === 'all') {
+        const [s, l, j] = await Promise.all([inventoryApi.listSpares(), inventoryApi.listLubes(), inventoryApi.listJobs()]);
+        const tag = (arr, t) => (arr.data || []).map(i => ({ ...i, _type: t }));
+        setItems([...tag(s, 'spare'), ...tag(l, 'lube'), ...tag(j, 'job')]);
+      } else {
+        const loaders = { spares: inventoryApi.listSpares, lubes: inventoryApi.listLubes, jobs: inventoryApi.listJobs, groups: inventoryApi.listGroups };
+        const { data } = await loaders[activeTab]();
+        setItems(data);
+      }
     } catch { toast({ title: 'Failed to load items', variant: 'error' }); }
     finally { setLoading(false); }
   }, [activeTab]);
@@ -678,11 +684,13 @@ export default function StockPage() {
 
   useEffect(() => { loadItems(); }, [loadItems]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (item) => {
     if (!confirm('Delete this item?')) return;
     try {
+      const byType = { spare: inventoryApi.deleteSpare, lube: inventoryApi.deleteLube, job: inventoryApi.deleteJob };
       const deleters = { spares: inventoryApi.deleteSpare, lubes: inventoryApi.deleteLube, jobs: inventoryApi.deleteJob, groups: inventoryApi.deleteGroup };
-      await deleters[activeTab](id);
+      const del = activeTab === 'all' ? byType[item._type] : deleters[activeTab];
+      await del(item._id);
       toast({ title: 'Deleted', variant: 'success' });
       loadItems(); loadStats();
     } catch { toast({ title: 'Delete failed', variant: 'error' }); }
@@ -714,7 +722,14 @@ export default function StockPage() {
 
   useEffect(() => { setPage(1); }, [search, vehicleSearch, qtyFilter, activeTab, limit]);
 
+  // "Spare Parts" = combined view of Spare + Lube + Job (each item still keeps its
+  // own single category; this is just an all-in-one list).
+  const allStat = {
+    count: stats.spares.count + stats.lubes.count + stats.jobs.count,
+    value: stats.spares.value + stats.lubes.value + stats.jobs.value,
+  };
   const tabConfig = [
+    { key: 'all',    label: 'Spare Parts', color: 'dark', stat: allStat },
     { key: 'spares', label: 'Spare',  color: 'red',    stat: stats.spares,  modalType: 'spare'  },
     { key: 'lubes',  label: 'Lubes',  color: 'orange', stat: stats.lubes,   modalType: 'lube'   },
     { key: 'jobs',   label: 'Jobs',   color: 'green',  stat: stats.jobs,    modalType: 'job'    },
@@ -722,6 +737,7 @@ export default function StockPage() {
   ];
 
   const isStockType = activeTab === 'spares' || activeTab === 'lubes';
+  const showStockCols = isStockType || activeTab === 'all';   // stock columns visible in the combined view too
 
   return (
     <div>
@@ -739,6 +755,10 @@ export default function StockPage() {
         </div>
         {stockPerm('canAdd') && (
         <div className="flex gap-2 flex-wrap">
+          <button onClick={() => setModal({ type: 'choose' })}
+            className="px-3 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary-600 flex items-center gap-1">
+            + Add Spare Parts
+          </button>
           <button onClick={() => setModal({ type: 'spare' })}
             className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-1">
             Create Spare <span className="bg-gray-100 text-gray-500 px-1 rounded text-[10px]">S</span>
@@ -786,7 +806,7 @@ export default function StockPage() {
             <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
         )}
-        {activeTab !== 'groups' && (
+        {activeTab !== 'groups' && activeTab !== 'all' && (
           <>
             <button
               onClick={downloadSample}
@@ -836,15 +856,16 @@ export default function StockPage() {
                   <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     {activeTab === 'jobs' ? 'Job Name' : 'Part Name'}
                   </th>
+                  {activeTab === 'all' && <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>}
                   <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     {activeTab === 'jobs' ? 'Job Code' : 'Part Number'}
                   </th>
                   {activeTab !== 'jobs' && <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Company</th>}
                   <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sub Category</th>
-                  {isStockType && <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Qty</th>}
-                  {isStockType && <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">To Order</th>}
+                  {showStockCols && <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Qty</th>}
+                  {showStockCols && <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">To Order</th>}
                   <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Units</th>
-                  {isStockType && <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rack No</th>}
+                  {showStockCols && <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rack No</th>}
                   <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Selling Price</th>
                 </>
               ) : (
@@ -860,9 +881,9 @@ export default function StockPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={11} className="text-center py-10 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={12} className="text-center py-10 text-gray-400">Loading...</td></tr>
             ) : paged.length === 0 ? (
-              <tr><td colSpan={11} className="text-center py-10 text-gray-400">No items found</td></tr>
+              <tr><td colSpan={12} className="text-center py-10 text-gray-400">No items found</td></tr>
             ) : paged.map((item, idx) => (
               <tr key={item._id} className="border-b border-gray-100 hover:bg-gray-50 last:border-0">
                 <td className="py-3 px-4 text-gray-500">{(page - 1) * limit + idx + 1}</td>
@@ -876,17 +897,24 @@ export default function StockPage() {
                         </div>
                       )}
                     </td>
+                    {activeTab === 'all' && (
+                      <td className="py-3 px-4">
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${item._type === 'spare' ? 'bg-red-100 text-red-700' : item._type === 'lube' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+                          {item._type === 'spare' ? 'Spare' : item._type === 'lube' ? 'Lube' : 'Job'}
+                        </span>
+                      </td>
+                    )}
                     <td className="py-3 px-4 text-gray-500 text-xs">{item.partNumber || item.jobCode || '-'}</td>
                     {activeTab !== 'jobs' && <td className="py-3 px-4 text-gray-500 text-xs">{item.company || '-'}</td>}
                     <td className="py-3 px-4 text-gray-500 text-xs">{item.subCategory || '-'}</td>
-                    {isStockType && (
+                    {showStockCols && (
                       <td className="py-3 px-4 text-right text-gray-700">
                         <span className={`font-medium ${(item.currentStock || 0) <= (item.lowerLimit || 0) && (item.currentStock || 0) > 0 ? 'text-orange-500' : (item.currentStock || 0) === 0 ? 'text-red-500' : ''}`}>
                           {item.currentStock ?? '-'}
                         </span>
                       </td>
                     )}
-                    {isStockType && (() => {
+                    {showStockCols && (() => {
                       const toOrder = Math.max(0, (item.lowerLimit || 0) - (item.currentStock || 0));
                       return (
                         <td className="py-3 px-4 text-right">
@@ -897,7 +925,7 @@ export default function StockPage() {
                       );
                     })()}
                     <td className="py-3 px-4 text-gray-500 text-xs">{item.unit || '-'}</td>
-                    {isStockType && <td className="py-3 px-4 text-gray-500 text-xs">{item.rackNumber || '-'}</td>}
+                    {showStockCols && <td className="py-3 px-4 text-gray-500 text-xs">{item.rackNumber || '-'}</td>}
                     <td className="py-3 px-4 text-right text-gray-700">₹{item.sellingPrice || item.unitPrice || 0}</td>
                   </>
                 ) : (
@@ -912,12 +940,12 @@ export default function StockPage() {
                   <div className="flex items-center justify-center gap-1">
                     {stockPerm('canEdit') && (
                       <button
-                        onClick={() => setModal({ type: activeTab === 'groups' ? 'group' : activeTab.slice(0, -1), item })}
+                        onClick={() => setModal({ type: activeTab === 'all' ? item._type : (activeTab === 'groups' ? 'group' : activeTab.slice(0, -1)), item })}
                         className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500">
                         <Pencil size={14} />
                       </button>
                     )}
-                    <button onClick={() => handleDelete(item._id)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500">
+                    <button onClick={() => handleDelete(item)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -929,6 +957,25 @@ export default function StockPage() {
       </div>
 
       <Pagination page={page} pages={totalPages} total={totalFiltered} limit={limit} onPage={setPage} onLimit={setLimit} />
+
+      {/* Add Spare Parts — pick a category, then the item is created & stored under it */}
+      {modal?.type === 'choose' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="font-semibold text-gray-800 mb-1">Add Spare Parts</h3>
+            <p className="text-sm text-gray-500 mb-4">Select a category — the item is saved under that single category.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[['spare', 'Spare'], ['lube', 'Lube'], ['job', 'Job']].map(([t, l]) => (
+                <button key={t} onClick={() => setModal({ type: t })}
+                  className="px-3 py-4 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-primary/40">
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       {modal?.type === 'spare' && <SpareModal item={modal.item} onClose={() => setModal(null)} onSaved={onSaved} makes={makes} />}

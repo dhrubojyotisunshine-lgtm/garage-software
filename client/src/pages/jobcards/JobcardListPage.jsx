@@ -3,6 +3,8 @@ import { DateField } from '../../components/ui/DateField';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Search, Printer, Download, Trash2, Edit, FileText, RefreshCw, MessageCircle, ClipboardList } from 'lucide-react';
 import { jobcardsApi } from '../../api/jobcards';
+import { useVehicleModels } from '../../hooks/useVehicleModels';
+import { vehicleTypeOf } from '../../utils/vehicleType';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { buildInvoiceWhatsappUrl } from '../../utils/whatsapp';
 import { useToast } from '../../components/ui/Toast';
@@ -32,6 +34,7 @@ export default function JobcardListPage() {
   const { toast } = useToast();
   const { isStaff, staffUser, garage } = useAuthStore();
   const perm = (key) => !isStaff || !!staffUser?.roleId?.jobcardPermissions?.[key];
+  const models = useVehicleModels();
   const [jobcards, setJobcards] = useState([]);
   const [counts, setCounts] = useState({});
   const [loading, setLoading] = useState(false);
@@ -250,7 +253,7 @@ export default function JobcardListPage() {
                     {jc.customerType && <div className="text-[11px] font-semibold text-primary uppercase mt-0.5">{jc.customerType}</div>}
                   </td>
                   <td className="py-3 px-4 text-gray-500 text-xs">
-                    {[jc.vehicleMake, jc.vehicleModel].filter(Boolean).join(' ') || '-'}
+                    {(() => { const n = [jc.vehicleMake, jc.vehicleModel].filter(Boolean).join(' '); if (!n) return '-'; const t = vehicleTypeOf(models, { makeName: jc.vehicleMake, modelName: jc.vehicleModel }); return t ? `${n} (${t})` : n; })()}
                   </td>
                   <td className="py-3 px-4 text-right font-medium text-gray-800">
                     {formatCurrency(jc.billAmount)}
@@ -270,12 +273,24 @@ export default function JobcardListPage() {
                           <Edit size={14} />
                         </button>
                       )}
-                      <button
-                        onClick={(e) => handlePrint(jc._id, e)}
-                        className="p-1.5 rounded-lg hover:bg-green-50 text-green-500" title="Print Invoice"
-                      >
-                        <Printer size={14} />
-                      </button>
+                      {/* Proforma Invoice while the jobcard is still Open */}
+                      {jc.statusCategory === 'Open' && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); window.open(`/invoice/${jc._id}?mode=proforma`, '_blank'); }}
+                          className="p-1.5 rounded-lg hover:bg-amber-50 text-amber-500" title="Proforma Invoice"
+                        >
+                          <FileText size={14} />
+                        </button>
+                      )}
+                      {/* Tax Invoice only once the jobcard is Completed or Closed */}
+                      {(jc.statusCategory === 'Completed' || jc.statusCategory === 'Closed') && (
+                        <button
+                          onClick={(e) => handlePrint(jc._id, e)}
+                          className="p-1.5 rounded-lg hover:bg-green-50 text-green-500" title="Print Invoice"
+                        >
+                          <Printer size={14} />
+                        </button>
+                      )}
                       <button
                         onClick={(e) => handleWorksheet(jc._id, e)}
                         className="p-1.5 rounded-lg hover:bg-indigo-50 text-indigo-500" title="Mechanic Worksheet"

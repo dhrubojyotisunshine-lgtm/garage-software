@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { estimatesApi } from '../../api/estimates';
 import useAuthStore from '../../store/authStore';
 import TaxInvoiceDoc from '../../components/print/TaxInvoiceDoc';
+import { useVehicleModels } from '../../hooks/useVehicleModels';
+import { vehicleTypeOf } from '../../utils/vehicleType';
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
 const fmtDateTime = (d) => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : null;
@@ -12,6 +14,7 @@ export default function EstimateInvoicePage() {
   const { garage, fetchMe } = useAuthStore();
   const [est, setEst] = useState(null);
   const [err, setErr] = useState(null);
+  const models = useVehicleModels();
 
   useEffect(() => {
     (async () => {
@@ -37,7 +40,7 @@ export default function EstimateInvoicePage() {
 
   const vehicleRows = [
     ['Vehicle Number', est.vehicleNo],
-    ['Model', [est.vehicleMake, est.vehicleModel].filter(Boolean).join(' ') || null],
+    ['Model', (() => { const n = [est.vehicleMake, est.vehicleModel].filter(Boolean).join(' '); if (!n) return null; const t = vehicleTypeOf(models, { makeName: est.vehicleMake, modelName: est.vehicleModel }); return t ? `${n} (${t})` : n; })()],
   ].filter(([, v]) => v);
 
   const metaRows = [
